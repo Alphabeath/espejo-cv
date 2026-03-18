@@ -1,12 +1,27 @@
 import Image from "next/image"
 import { Brain, Mic, MessageSquareText, ArrowRight } from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+
+const feedbackTags = ["Analisis de tono", "Puntuacion de confianza"]
+
 export function FeaturesBento() {
   return (
     <section className="bg-ec-surface-container-low py-24">
       <div className="mx-auto max-w-7xl px-8">
-        {/* Section header */}
         <div className="mb-16">
+          <Badge variant="outline" className="mb-5 border-ec-outline-variant/50 bg-white/65 text-ec-on-surface-variant">
+            Plataforma de simulación
+          </Badge>
           <h2
             className="mb-4 text-3xl font-bold text-ec-on-surface md:text-4xl"
             style={{ fontFamily: "var(--font-headline)" }}
@@ -20,51 +35,54 @@ export function FeaturesBento() {
           </p>
         </div>
 
-        {/* Bento Grid */}
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          {/* Feature 1 — Análisis con IA (wide) */}
-          <div className="group flex flex-col justify-between rounded-xl bg-ec-surface-container-lowest p-10 transition-shadow hover:shadow-xl md:col-span-2">
-            <div className="max-w-md">
+          <Card className="group border border-white/60 bg-ec-surface-container-lowest md:col-span-2">
+            <CardHeader className="pb-0">
               <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-ec-primary-container">
                 <Brain className="h-6 w-6 text-ec-primary" />
               </div>
-              <h3
+              <CardTitle
                 className="mb-4 text-2xl font-bold"
                 style={{ fontFamily: "var(--font-headline)" }}
               >
                 Análisis con IA
-              </h3>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="max-w-md">
               <p className="leading-relaxed text-ec-on-surface-variant">
                 Nuestro motor analiza tu tono, contenido y estructura para
                 proporcionar perspectivas psicológicas sobre cómo eres percibido
                 por los entrevistadores.
               </p>
-            </div>
-            <div className="mt-12 flex cursor-pointer items-center gap-2 font-semibold text-ec-primary transition-transform group-hover:translate-x-2">
-              <span>Explorar análisis</span>
-              <ArrowRight className="h-4 w-4" />
-            </div>
-          </div>
+            </CardContent>
+            <CardFooter>
+              <Button variant="link" className="px-0 font-semibold text-ec-primary group-hover:translate-x-1">
+                Explorar análisis
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </CardFooter>
+          </Card>
 
-          {/* Feature 2 — Escenarios realistas (accent card) */}
-          <div className="flex flex-col justify-between rounded-xl bg-ec-primary p-10 text-ec-on-primary shadow-lg shadow-ec-primary/20">
-            <div>
+          <Card className="border-none bg-ec-primary text-ec-on-primary shadow-lg shadow-ec-primary/20">
+            <CardHeader>
               <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-white/10">
                 <Mic className="h-6 w-6 text-white" />
               </div>
-              <h3
-                className="mb-4 text-2xl font-bold"
+              <CardTitle
+                className="mb-4 text-2xl font-bold text-white"
                 style={{ fontFamily: "var(--font-headline)" }}
               >
                 Escenarios Realistas
-              </h3>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <p className="leading-relaxed opacity-80">
                 Desde profundizaciones técnicas hasta preguntas de
                 comportamiento inesperadas, simulamos los niveles exactos de
                 estrés de una ronda final.
               </p>
-            </div>
-            <div className="mt-8 border-t border-white/10 pt-8">
+            </CardContent>
+            <CardFooter className="block border-t border-white/10 pt-8">
               <Image
                 src="/interview-ui.png"
                 alt="Interfaz de entrevista por video"
@@ -72,54 +90,60 @@ export function FeaturesBento() {
                 height={180}
                 className="w-full rounded object-cover opacity-90 shadow-sm"
               />
-            </div>
-          </div>
+            </CardFooter>
+          </Card>
 
-          {/* Feature 3 — Feedback personalizado (tertiary card) */}
-          <div className="group flex flex-col justify-between rounded-xl bg-ec-tertiary-container p-10 transition-shadow hover:shadow-xl">
-            <div>
+          <Card className="group border-none bg-ec-tertiary-container">
+            <CardHeader>
               <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-white/50">
                 <MessageSquareText className="h-6 w-6 text-ec-tertiary" />
               </div>
-              <h3
+              <CardTitle
                 className="mb-4 text-2xl font-bold"
                 style={{ fontFamily: "var(--font-headline)" }}
               >
                 Feedback Personalizado
-              </h3>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <p className="leading-relaxed text-ec-on-tertiary-container">
                 Recibe un informe detallado después de cada sesión con consejos
                 accionables sobre cómo perfeccionar tu historia única.
               </p>
-            </div>
-            <div className="mt-8 flex flex-wrap gap-2">
-              <span className="rounded-full bg-white/60 px-3 py-1 text-xs font-medium text-ec-tertiary">
-                Análisis de Tono
-              </span>
-              <span className="rounded-full bg-white/60 px-3 py-1 text-xs font-medium text-ec-tertiary">
-                Puntuación de Confianza
-              </span>
-            </div>
-          </div>
+            </CardContent>
+            <CardFooter className="flex flex-wrap gap-2">
+              {feedbackTags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="h-auto bg-white/60 px-3 py-1 text-xs font-medium text-ec-tertiary"
+                >
+                  {tag}
+                </Badge>
+              ))}
+            </CardFooter>
+          </Card>
 
-          {/* CTA mini-section */}
-          <div className="flex flex-col items-center justify-between gap-6 rounded-xl bg-ec-surface-container-highest p-10 sm:flex-row md:col-span-2">
-            <div className="flex-1">
-              <h3
-                className="mb-2 text-xl font-bold"
-                style={{ fontFamily: "var(--font-headline)" }}
-              >
-                ¿Listo para encontrar tu claridad?
-              </h3>
-              <p className="text-sm text-ec-on-surface-variant">
-                Únete a más de 10,000 candidatos que practicaron su camino hacia
-                la cima.
-              </p>
-            </div>
-            <button className="rounded-md bg-ec-on-surface px-6 py-3 font-medium text-ec-surface transition-opacity hover:opacity-90">
-              Comenzar Ahora
-            </button>
-          </div>
+          <Card className="border-none bg-ec-surface-container-highest md:col-span-2">
+            <CardContent className="flex flex-col items-start justify-between gap-6 pt-6 sm:flex-row sm:items-center">
+              <div className="flex-1">
+                <h3
+                  className="mb-2 text-xl font-bold"
+                  style={{ fontFamily: "var(--font-headline)" }}
+                >
+                  ¿Listo para encontrar tu claridad?
+                </h3>
+                <p className="text-sm text-ec-on-surface-variant">
+                  Únete a más de 10,000 candidatos que practicaron su camino hacia
+                  la cima.
+                </p>
+              </div>
+              <Separator orientation="vertical" className="hidden h-12 bg-ec-outline-variant/50 sm:block" />
+              <Button className="bg-ec-on-surface px-6 text-ec-surface hover:bg-ec-on-surface/90">
+                Comenzar Ahora
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </section>

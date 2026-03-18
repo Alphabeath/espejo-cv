@@ -3,6 +3,11 @@
 import Link from "next/link"
 import { User } from "lucide-react"
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+
 const navLinks = [
   { label: "Panel", href: "#", active: true },
   { label: "Práctica", href: "#", active: false },
@@ -11,46 +16,55 @@ const navLinks = [
 
 export function Navbar() {
   return (
-    <nav className="fixed top-0 z-50 w-full bg-ec-surface/80 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-8 py-4">
-        {/* Logo */}
-        <Link
-          href="/"
-          className="font-[var(--font-headline)] text-xl font-bold tracking-widest text-ec-on-surface"
-          style={{ fontFamily: "var(--font-headline)" }}
-        >
-          espejoCV
-        </Link>
+    <nav className="fixed top-0 z-50 w-full border-b border-white/40 bg-ec-surface/80 backdrop-blur-md">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4 md:px-8">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="font-[var(--font-headline)] text-xl font-bold tracking-widest text-ec-on-surface"
+            style={{ fontFamily: "var(--font-headline)" }}
+          >
+            espejoCV
+          </Link>
+          <Badge
+            variant="outline"
+            className="hidden border-ec-outline-variant/60 bg-white/70 text-[10px] uppercase tracking-[0.24em] text-ec-on-surface-variant md:inline-flex"
+          >
+            AI Interview Lab
+          </Badge>
+        </div>
 
-        {/* Nav links — desktop */}
-        <div className="hidden items-center gap-8 md:flex">
+        <div className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
-            <Link
+            <Button
               key={link.label}
-              href={link.href}
-              className={
-                link.active
-                  ? "border-b-2 border-ec-on-surface pb-1 text-sm font-semibold tracking-tight text-ec-on-surface"
-                  : "pb-1 text-sm font-medium tracking-tight text-ec-on-surface-variant transition-colors hover:text-ec-primary"
-              }
-              style={{ fontFamily: "var(--font-headline)" }}
+              asChild
+              variant={link.active ? "secondary" : "ghost"}
+              size="sm"
+              className={link.active ? "bg-white/80 text-ec-on-surface shadow-xs" : "text-ec-on-surface-variant hover:text-ec-primary"}
             >
-              {link.label}
-            </Link>
+              <Link href={link.href} style={{ fontFamily: "var(--font-headline)" }}>
+                {link.label}
+              </Link>
+            </Button>
           ))}
         </div>
 
-        {/* User icon */}
-        <button
-          className="rounded-lg p-2 transition-all duration-200 hover:bg-ec-surface-container-high"
+        <Button
+          variant="outline"
+          size="icon-sm"
+          className="rounded-full border-ec-outline-variant/50 bg-white/70 hover:bg-white"
           aria-label="Cuenta de usuario"
         >
-          <User className="h-5 w-5 text-ec-primary" />
-        </button>
+          <Avatar size="sm" className="bg-ec-primary/10 text-ec-primary after:border-transparent">
+            <AvatarFallback className="bg-transparent text-ec-primary">
+              <User className="h-4 w-4" />
+            </AvatarFallback>
+          </Avatar>
+        </Button>
       </div>
 
-      {/* Bottom separator — tonal transition, no harsh border */}
-      <div className="h-px w-full bg-ec-surface-container-high" />
+      <Separator className="bg-ec-surface-container-high/80" />
     </nav>
   )
 }

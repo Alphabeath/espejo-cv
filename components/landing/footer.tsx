@@ -1,5 +1,8 @@
 import Link from "next/link"
 
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+
 const footerLinks = [
   { label: "Política de Privacidad", href: "#" },
   { label: "Términos de Servicio", href: "#" },
@@ -9,21 +12,26 @@ const footerLinks = [
 export function Footer() {
   return (
     <footer className="w-full bg-ec-surface-container-low py-12">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-12 md:flex-row md:gap-0">
-        <div className="text-xs tracking-wide text-ec-on-surface-variant">
+      <div className="mx-auto max-w-7xl px-8">
+        <Separator className="mb-8 bg-ec-outline-variant/50" />
+        <div className="flex flex-col items-center justify-between gap-4 md:flex-row md:gap-0">
+          <div className="text-xs tracking-wide text-ec-on-surface-variant">
           © {new Date().getFullYear()} espejoCV Interview Systems
-        </div>
+          </div>
 
-        <div className="flex gap-8">
-          {footerLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className="text-xs tracking-wide text-ec-on-surface-variant underline underline-offset-4 transition-colors hover:text-ec-primary"
-            >
-              {link.label}
-            </Link>
-          ))}
+          <div className="flex flex-wrap justify-center gap-1">
+            {footerLinks.map((link) => (
+              <Button
+                key={link.label}
+                asChild
+                variant="link"
+                size="sm"
+                className="h-auto px-3 text-xs tracking-wide text-ec-on-surface-variant hover:text-ec-primary"
+              >
+                <Link href={link.href}>{link.label}</Link>
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
     </footer>
