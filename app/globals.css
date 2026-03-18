@@ -4,25 +4,28 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ===== espejoCV Design System: "The Quiet Authority" ===== */
+
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
+    /* --- shadcn defaults (mapped to our palette) --- */
+    --background: oklch(0.975 0.003 240);
+    --foreground: oklch(0.27 0.015 210);
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
+    --card-foreground: oklch(0.27 0.015 210);
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.27 0.015 210);
+    --primary: oklch(0.445 0.055 260);
+    --primary-foreground: oklch(0.975 0.005 280);
+    --secondary: oklch(0.47 0.045 255);
+    --secondary-foreground: oklch(0.975 0.005 260);
+    --muted: oklch(0.955 0.005 220);
+    --muted-foreground: oklch(0.46 0.015 210);
+    --accent: oklch(0.27 0.015 210);
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --border: oklch(0.78 0.01 210);
+    --input: oklch(0.78 0.01 210);
+    --ring: oklch(0.445 0.055 260);
     --chart-1: oklch(0.809 0.105 251.813);
     --chart-2: oklch(0.623 0.214 259.815);
     --chart-3: oklch(0.546 0.245 262.881);
@@ -31,7 +34,7 @@
     --radius: 0.625rem;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary: oklch(0.445 0.055 260);
     --sidebar-primary-foreground: oklch(0.985 0 0);
     --sidebar-accent: oklch(0.97 0 0);
     --sidebar-accent-foreground: oklch(0.205 0 0);
@@ -46,8 +49,8 @@
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
+    --primary: oklch(0.82 0.08 268);
+    --primary-foreground: oklch(0.3 0.05 260);
     --secondary: oklch(0.269 0 0);
     --secondary-foreground: oklch(0.985 0 0);
     --muted: oklch(0.269 0 0);
@@ -75,6 +78,9 @@
 
 @theme inline {
     --font-sans: var(--font-sans);
+    --font-headline: var(--font-headline);
+
+    /* shadcn tokens */
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -113,16 +119,138 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+
+    /* ===== espejoCV Custom Color Tokens (direct oklch values) ===== */
+
+    /* Surface palette */
+    --color-ec-surface: oklch(0.975 0.003 230);
+    --color-ec-surface-dim: oklch(0.88 0.01 220);
+    --color-ec-surface-bright: oklch(0.975 0.003 230);
+    --color-ec-surface-container-lowest: oklch(1 0 0);
+    --color-ec-surface-container-low: oklch(0.96 0.005 220);
+    --color-ec-surface-container: oklch(0.94 0.005 220);
+    --color-ec-surface-container-high: oklch(0.92 0.005 220);
+    --color-ec-surface-container-highest: oklch(0.89 0.008 220);
+    --color-ec-surface-variant: oklch(0.89 0.008 220);
+    --color-ec-on-surface: oklch(0.27 0.015 210);
+    --color-ec-on-surface-variant: oklch(0.44 0.012 210);
+
+    /* Primary palette */
+    --color-ec-primary: oklch(0.445 0.055 260);
+    --color-ec-primary-dim: oklch(0.40 0.055 260);
+    --color-ec-primary-container: oklch(0.88 0.045 270);
+    --color-ec-primary-fixed: oklch(0.88 0.045 270);
+    --color-ec-primary-fixed-dim: oklch(0.83 0.055 270);
+    --color-ec-on-primary: oklch(0.97 0.005 280);
+    --color-ec-on-primary-container: oklch(0.38 0.05 260);
+    --color-ec-on-primary-fixed: oklch(0.32 0.045 260);
+    --color-ec-on-primary-fixed-variant: oklch(0.42 0.05 260);
+
+    /* Secondary palette */
+    --color-ec-secondary: oklch(0.47 0.045 255);
+    --color-ec-secondary-dim: oklch(0.42 0.045 255);
+    --color-ec-secondary-container: oklch(0.88 0.04 265);
+    --color-ec-secondary-fixed: oklch(0.88 0.04 265);
+    --color-ec-secondary-fixed-dim: oklch(0.82 0.045 265);
+    --color-ec-on-secondary: oklch(0.97 0.005 260);
+    --color-ec-on-secondary-container: oklch(0.38 0.04 255);
+    --color-ec-on-secondary-fixed: oklch(0.32 0.04 255);
+
+    /* Tertiary palette */
+    --color-ec-tertiary: oklch(0.46 0.04 290);
+    --color-ec-tertiary-dim: oklch(0.42 0.04 290);
+    --color-ec-tertiary-container: oklch(0.90 0.035 290);
+    --color-ec-tertiary-fixed: oklch(0.90 0.035 290);
+    --color-ec-tertiary-fixed-dim: oklch(0.86 0.04 290);
+    --color-ec-on-tertiary: oklch(0.97 0.005 290);
+    --color-ec-on-tertiary-container: oklch(0.40 0.035 290);
+    --color-ec-on-tertiary-fixed: oklch(0.34 0.035 290);
+
+    /* Semantic */
+    --color-ec-error: oklch(0.50 0.15 25);
+    --color-ec-error-container: oklch(0.75 0.14 20);
+    --color-ec-on-error: oklch(0.97 0.005 20);
+    --color-ec-outline: oklch(0.57 0.01 210);
+    --color-ec-outline-variant: oklch(0.75 0.01 210);
+    --color-ec-inverse-surface: oklch(0.18 0.01 210);
+    --color-ec-inverse-on-surface: oklch(0.67 0.005 210);
+    --color-ec-inverse-primary: oklch(0.82 0.06 268);
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+    * {
+        @apply border-border outline-ring/50;
     }
-  body {
-    @apply bg-background text-foreground;
+
+    body {
+        @apply bg-ec-surface text-ec-on-surface;
+        font-family: var(--font-sans);
     }
-  html {
-    @apply font-sans;
+
+    html {
+        @apply antialiased;
+        scroll-behavior: smooth;
+    }
+
+    ::selection {
+        background-color: oklch(0.88 0.045 270);
+        color: oklch(0.32 0.045 260);
     }
 }
+
+/* ===== Utility classes ===== */
+
+.signature-gradient {
+    background: linear-gradient(135deg, oklch(0.445 0.055 260) 0%, oklch(0.40 0.055 260) 100%);
+}
+
+.text-glow {
+    text-shadow: 0 0 40px oklch(0.445 0.055 260 / 0.08);
+}
+
+/* Gentle fade-in animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(32px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.6s ease both;
+}
+
+.animate-slide-in-right {
+    animation: slideInRight 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-600 { animation-delay: 0.6s; }

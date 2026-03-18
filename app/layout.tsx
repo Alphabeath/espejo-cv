@@ -1,15 +1,18 @@
-import { Geist, Geist_Mono, Inter } from "next/font/google"
+import { Inter, Manrope, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'})
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
+const manrope = Manrope({ subsets: ["latin"], variable: "--font-headline" })
+const fontMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
 
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-})
+export const metadata = {
+  title: "espejoCV — Claridad en tu Entrevista",
+  description:
+    "Sube tu CV y la descripción del puesto para iniciar una simulación de entrevista realista impulsada por IA. Gana la confianza necesaria para conseguir el rol.",
+}
 
 export default function RootLayout({
   children,
@@ -18,9 +21,15 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="es"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
+      className={cn(
+        "antialiased",
+        inter.variable,
+        manrope.variable,
+        fontMono.variable,
+        "font-sans"
+      )}
     >
       <body>
         <ThemeProvider>{children}</ThemeProvider>
