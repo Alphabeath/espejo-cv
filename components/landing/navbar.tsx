@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
 const navLinks = [
