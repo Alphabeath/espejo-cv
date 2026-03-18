@@ -1,7 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { User } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -9,12 +11,14 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
 const navLinks = [
-  { label: "Panel", href: "#", active: true },
-  { label: "Práctica", href: "#", active: false },
-  { label: "Retroalimentación", href: "#", active: false },
+  { label: "Panel", href: "/" },
+  { label: "Práctica", href: "/practica" },
+  { label: "Retroalimentación", href: "/feedback" },
 ]
 
 export function Navbar() {
+  const pathname = usePathname()
+
   return (
     <nav className="fixed top-0 z-50 w-full border-b border-white/40 bg-ec-surface/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4 md:px-8">
