@@ -17,6 +17,10 @@ type AuthCredentials = {
 	password: string
 }
 
+type RegisterCredentials = AuthCredentials & {
+	name: string
+}
+
 const authUserQueryKey = ["auth", "user"] as const
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -26,7 +30,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 export function useAuth() {
 	const queryClient = useQueryClient()
 
-	const userQuery = useQuery({
+	const userQuery = useQuery<AuthUser | null>({
 		queryKey: authUserQueryKey,
 		queryFn: getCurrentUser,
 		retry: false,
@@ -34,18 +38,18 @@ export function useAuth() {
 		refetchOnWindowFocus: false,
 	})
 
-	const loginMutation = useMutation({
+	const loginMutation = useMutation<AuthUser | null, Error, AuthCredentials>({
 		mutationFn: async ({ email, password }: AuthCredentials) => {
 			await signIn(email, password)
 			return getCurrentUser()
 		},
-		onSuccess: (user) => {
+		onSuccess: (user: AuthUser | null) => {
 			queryClient.setQueryData(authUserQueryKey, user)
 		},
 	})
 
-	const registerMutation = useMutation({
-		mutationFn: async ({ name, email, password }: AuthCredentials & { name: string }) => {
+	const registerMutation = useMutation<AuthUser, Error, RegisterCredentials>({
+		mutationFn: async ({ name, email, password }: RegisterCredentials) => {
 			return signUp(name, email, password)
 		},
 		onSuccess: () => {
@@ -74,7 +78,7 @@ export function useAuth() {
 			getErrorMessage(logoutMutation.error, "") ||
 			null,
 		login: async (credentials: AuthCredentials) => loginMutation.mutateAsync(credentials),
-		register: async (credentials: AuthCredentials) => registerMutation.mutateAsync(credentials),
+		register: async (credentials: RegisterCredentials) => registerMutation.mutateAsync(credentials),
 		logout: async () => logoutMutation.mutateAsync(),
 		refreshUser: async () => {
 			await queryClient.invalidateQueries({ queryKey: authUserQueryKey })

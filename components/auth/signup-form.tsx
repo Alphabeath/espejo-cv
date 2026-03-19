@@ -41,7 +41,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
     setFormError(null)
 
     try {
-      await register({ email, password })
+      await register({name, email, password })
       router.push("/auth/login")
     } catch {
       return
