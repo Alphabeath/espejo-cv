@@ -1,3 +1,9 @@
+"use client"
+
+import { useState } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,11 +20,28 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { useAuth } from "@/hooks/useAuth"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const router = useRouter()
+  const { login, isLoading, error } = useAuth()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    try {
+      await login({ email, password })
+      router.push("/dashboard")
+    } catch {
+      return
+    }
+  }
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -29,7 +52,7 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form>
+          <form onSubmit={handleSubmit}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="email">Correo electrónico</FieldLabel>
@@ -37,6 +60,8 @@ export function LoginForm({
                   id="email"
                   type="email"
                   placeholder="m@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   required
                 />
               </Field>
@@ -50,16 +75,29 @@ export function LoginForm({
                     ¿Olvidaste tu contraseña?
                   </a>
                 </div>
-                <Input id="password" type="password" required />
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
               </Field>
               <Field>
-                <Button type="submit">Iniciar sesión</Button>
-                <Button variant="outline" type="button">
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
+                </Button>
+                <Button variant="outline" type="button" disabled={isLoading}>
                   Iniciar sesión con Google
                 </Button>
                 <FieldDescription className="text-center">
-                  ¿No tienes una cuenta? <a href="#">Regístrate</a>
+                  ¿No tienes una cuenta? <Link href="/auth/register">Regístrate</Link>
                 </FieldDescription>
+                {error ? (
+                  <FieldDescription className="text-center text-red-500">
+                    {error}
+                  </FieldDescription>
+                ) : null}
               </Field>
             </FieldGroup>
           </form>

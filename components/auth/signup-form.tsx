@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -14,8 +17,37 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+
+import { useAuth } from "@/hooks/useAuth"
 
 export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
+  const router = useRouter()
+  const { register, isLoading, error } = useAuth()
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [formError, setFormError] = useState<string | null>(null)
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (password !== confirmPassword) {
+      setFormError("Las contraseñas no coinciden")
+      return
+    }
+
+    setFormError(null)
+
+    try {
+      await register({ email, password })
+      router.push("/auth/login")
+    } catch {
+      return
+    }
+  }
+
   return (
     <Card {...props}>
       <CardHeader>
@@ -25,11 +57,18 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form>
+        <form onSubmit={handleSubmit}>
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="name">Nombre completo</FieldLabel>
-              <Input id="name" type="text" placeholder="John Doe" required />
+              <Input
+                id="name"
+                type="text"
+                placeholder="John Doe"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                required
+              />
             </Field>
             <Field>
               <FieldLabel htmlFor="email">Correo electrónico</FieldLabel>
@@ -37,6 +76,8 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                 id="email"
                 type="email"
                 placeholder="m@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                 required
               />
               <FieldDescription>
@@ -45,7 +86,13 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
             </Field>
             <Field>
               <FieldLabel htmlFor="password">Contraseña</FieldLabel>
-              <Input id="password" type="password" required />
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
               <FieldDescription>
                 Debe tener al menos 8 caracteres.
               </FieldDescription>
@@ -54,18 +101,31 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
               <FieldLabel htmlFor="confirm-password">
                 Confirmar contraseña
               </FieldLabel>
-              <Input id="confirm-password" type="password" required />
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                required
+              />
               <FieldDescription>Por favor, confirma tu contraseña.</FieldDescription>
             </Field>
             <FieldGroup>
               <Field>
-                <Button type="submit">Crear cuenta</Button>
-                <Button variant="outline" type="button">
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Creando cuenta..." : "Crear cuenta"}
+                </Button>
+                <Button variant="outline" type="button" disabled={isLoading}>
                   Registrarse con Google
                 </Button>
                 <FieldDescription className="px-6 text-center">
                   ¿Ya tienes una cuenta? <Link href="/auth/login">Inicia sesión</Link>
                 </FieldDescription>
+                {formError || error ? (
+                  <FieldDescription className="px-6 text-center text-red-500">
+                    {formError || error}
+                  </FieldDescription>
+                ) : null}
               </Field>
             </FieldGroup>
           </FieldGroup>
