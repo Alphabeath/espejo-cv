@@ -24,14 +24,13 @@ export default function RootLayout({
       lang="es"
       suppressHydrationWarning
       className={cn(
-        "antialiased",
         inter.variable,
         manrope.variable,
         fontMono.variable,
         "font-sans"
       )}
     >
-      <body>
+      <body className="min-h-svh text-ec-on-surface">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

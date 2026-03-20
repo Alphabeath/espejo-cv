@@ -13,7 +13,7 @@ export function Footer() {
   return (
     <footer className="w-full bg-ec-surface-container-low py-12">
       <div className="mx-auto max-w-7xl px-8">
-        <Separator className="mb-8 bg-ec-outline-variant/50" />
+        <Separator className="mb-8 bg-gradient-to-r from-transparent via-ec-outline-variant/25 to-transparent" />
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row md:gap-0">
           <div className="text-xs tracking-wide text-ec-on-surface-variant">
           © {new Date().getFullYear()} espejoCV Interview Systems

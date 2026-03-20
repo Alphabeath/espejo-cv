@@ -16,10 +16,10 @@ const feedbackTags = ["Analisis de tono", "Puntuacion de confianza"]
 
 export function FeaturesBento() {
   return (
-    <section className="bg-ec-surface-container-low py-24">
+    <section className="quiet-shell bg-ec-surface-container-low py-24">
       <div className="mx-auto max-w-7xl px-8">
         <div className="mb-16">
-          <Badge variant="outline" className="mb-5 border-ec-outline-variant/50 bg-white/65 text-ec-on-surface-variant">
+          <Badge variant="outline" className="mb-5 border-ec-outline-variant/20 bg-ec-surface-container-lowest text-ec-on-surface-variant">
             Plataforma de simulación
           </Badge>
           <h2
@@ -36,7 +36,7 @@ export function FeaturesBento() {
         </div>
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          <Card className="group border border-white/60 bg-ec-surface-container-lowest md:col-span-2">
+          <Card className="group md:col-span-2">
             <CardHeader className="pb-0">
               <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-ec-primary-container">
                 <Brain className="h-6 w-6 text-ec-primary" />
@@ -63,7 +63,7 @@ export function FeaturesBento() {
             </CardFooter>
           </Card>
 
-          <Card className="border-none bg-ec-primary text-ec-on-primary shadow-lg shadow-ec-primary/20">
+          <Card className="signature-gradient text-ec-on-primary shadow-[0_28px_64px_-36px_oklch(0.27_0.015_210/0.45)]">
             <CardHeader>
               <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-white/10">
                 <Mic className="h-6 w-6 text-white" />
@@ -82,7 +82,7 @@ export function FeaturesBento() {
                 estrés de una ronda final.
               </p>
             </CardContent>
-            <CardFooter className="block border-t border-white/10 pt-8">
+            <CardFooter className="block pt-8">
               <Image
                 src="/interview-ui.png"
                 alt="Interfaz de entrevista por video"
@@ -93,7 +93,7 @@ export function FeaturesBento() {
             </CardFooter>
           </Card>
 
-          <Card className="group border-none bg-ec-tertiary-container">
+          <Card className="group bg-ec-tertiary-container">
             <CardHeader>
               <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-white/50">
                 <MessageSquareText className="h-6 w-6 text-ec-tertiary" />
@@ -124,7 +124,7 @@ export function FeaturesBento() {
             </CardFooter>
           </Card>
 
-          <Card className="border-none bg-ec-surface-container-highest md:col-span-2">
+          <Card className="md:col-span-2 bg-ec-surface-container-highest">
             <CardContent className="flex flex-col items-start justify-between gap-6 pt-6 sm:flex-row sm:items-center">
               <div className="flex-1">
                 <h3
@@ -138,7 +138,7 @@ export function FeaturesBento() {
                   la cima.
                 </p>
               </div>
-              <Separator orientation="vertical" className="hidden h-12 bg-ec-outline-variant/50 sm:block" />
+              <Separator orientation="vertical" className="hidden h-12 bg-ec-outline-variant/25 sm:block" />
               <Button className="bg-ec-on-surface px-6 text-ec-surface hover:bg-ec-on-surface/90">
                 Comenzar Ahora
               </Button>

@@ -1,7 +1,10 @@
 import fs from "node:fs"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
 
-const WORKSPACE_ROOT = "/home/bryan/Proyectos/hackaton-cubepath"
-const ENV_PATH = `${WORKSPACE_ROOT}/.env`
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
+const PROJECT_ROOT = path.resolve(SCRIPT_DIR, "..")
+const ENV_PATH = path.join(PROJECT_ROOT, ".env")
 const DATABASE_ID = "espejo_cv"
 const BUCKET_ID = "cv-files"
 
@@ -10,7 +13,7 @@ function readEnvFile(filePath) {
 }
 
 function getEnvValue(envContent, key) {
-  const match = envContent.match(new RegExp(`^${key} = \"([^\"]+)\"$`, "m"))
+  const match = envContent.match(new RegExp(`^${key}\\s*=\\s*\"?([^\"\\n]+)\"?$`, "m"))
 
   if (!match) {
     throw new Error(`Missing ${key} in ${ENV_PATH}`)
@@ -37,10 +40,10 @@ const collections = [
     attributes: [
       { key: "userId", type: "string", size: 255, required: true },
       { key: "cvFileId", type: "string", size: 255, required: true },
-      { key: "cvText", type: "string", size: 65535, required: true },
-      { key: "jobOfferText", type: "string", size: 65535, required: true },
+      { key: "cvText", type: "longtext", required: true },
       { key: "jobOfferSource", type: "string", size: 64, required: true },
       { key: "jobOfferTitle", type: "string", size: 255, required: false },
+      { key: "jobOfferCompany", type: "string", size: 255, required: false },
       { key: "status", type: "string", size: 64, required: true },
       { key: "matchScore", type: "integer", required: false },
       { key: "strengthsCount", type: "integer", required: false },
@@ -53,68 +56,96 @@ const collections = [
     indexes: [
       { key: "idx_user_startedAt", type: "key", attributes: ["userId", "startedAt"] },
       { key: "idx_user_status", type: "key", attributes: ["userId", "status"] },
-      { key: "idx_status", type: "key", attributes: ["status"] },
+      { key: "idx_status_lastActivityAt", type: "key", attributes: ["status", "lastActivityAt"] },
     ],
   },
   {
     id: "job_offers",
     name: "Job Offers",
     attributes: [
-      { key: "sessionId", type: "string", size: 255, required: true },
       { key: "title", type: "string", size: 255, required: false },
       { key: "company", type: "string", size: 255, required: false },
-      { key: "sourceUrl", type: "string", size: 2048, required: false },
-      { key: "rawText", type: "string", size: 65535, required: true },
-      { key: "normalizedText", type: "string", size: 65535, required: true },
-      { key: "requirementsJson", type: "string", size: 65535, required: false },
+      { key: "sourceUrl", type: "url", required: false },
+      { key: "rawText", type: "longtext", required: true },
+      { key: "normalizedText", type: "longtext", required: true },
+      { key: "requirementsJson", type: "longtext", required: false },
       { key: "seniority", type: "string", size: 128, required: false },
-      { key: "keywords", type: "string", size: 65535, required: false },
-      { key: "riskSignals", type: "string", size: 65535, required: false },
+      { key: "keywords", type: "longtext", required: false },
+      { key: "riskSignals", type: "longtext", required: false },
       { key: "createdAt", type: "datetime", required: true },
     ],
     indexes: [
-      { key: "idx_sessionId", type: "key", attributes: ["sessionId"] },
       { key: "idx_title", type: "key", attributes: ["title"] },
+      { key: "idx_company", type: "key", attributes: ["company"] },
+      { key: "idx_seniority", type: "key", attributes: ["seniority"] },
     ],
   },
   {
     id: "interview_turns",
     name: "Interview Turns",
     attributes: [
-      { key: "sessionId", type: "string", size: 255, required: true },
       { key: "turnIndex", type: "integer", required: true },
-      { key: "question", type: "string", size: 8192, required: true },
-      { key: "answer", type: "string", size: 65535, required: false },
-      { key: "expectedSignal", type: "string", size: 2048, required: false },
+      { key: "question", type: "text", required: true },
+      { key: "answer", type: "longtext", required: false },
+      { key: "expectedSignal", type: "text", required: false },
       { key: "score", type: "integer", required: false },
-      { key: "feedback", type: "string", size: 65535, required: false },
+      { key: "feedback", type: "longtext", required: false },
       { key: "status", type: "string", size: 64, required: true },
       { key: "askedAt", type: "datetime", required: true },
       { key: "answeredAt", type: "datetime", required: false },
     ],
     indexes: [
-      { key: "idx_sessionId", type: "key", attributes: ["sessionId"] },
-      { key: "idx_session_turnIndex", type: "key", attributes: ["sessionId", "turnIndex"] },
+      { key: "idx_turnIndex", type: "key", attributes: ["turnIndex"] },
+      { key: "idx_status_askedAt", type: "key", attributes: ["status", "askedAt"] },
     ],
   },
   {
     id: "reports",
     name: "Reports",
     attributes: [
-      { key: "sessionId", type: "string", size: 255, required: true },
       { key: "overallScore", type: "integer", required: true },
-      { key: "summary", type: "string", size: 65535, required: true },
-      { key: "strengths", type: "string", size: 65535, required: false },
-      { key: "gaps", type: "string", size: 65535, required: false },
-      { key: "recommendations", type: "string", size: 65535, required: false },
+      { key: "summary", type: "longtext", required: true },
+      { key: "strengths", type: "longtext", required: false },
+      { key: "gaps", type: "longtext", required: false },
+      { key: "recommendations", type: "longtext", required: false },
       { key: "confidence", type: "integer", required: false },
       { key: "generatedAt", type: "datetime", required: true },
       { key: "modelVersion", type: "string", size: 128, required: false },
     ],
     indexes: [
-      { key: "idx_sessionId_unique", type: "unique", attributes: ["sessionId"] },
       { key: "idx_overallScore", type: "key", attributes: ["overallScore"] },
+      { key: "idx_generatedAt", type: "key", attributes: ["generatedAt"] },
     ],
+  },
+]
+
+const relationships = [
+  {
+    collectionId: "cv_sessions",
+    key: "jobOffer",
+    relatedCollectionId: "job_offers",
+    type: "oneToOne",
+    twoWay: true,
+    twoWayKey: "cvSession",
+    onDelete: "cascade",
+  },
+  {
+    collectionId: "cv_sessions",
+    key: "interviewTurns",
+    relatedCollectionId: "interview_turns",
+    type: "oneToMany",
+    twoWay: true,
+    twoWayKey: "cvSession",
+    onDelete: "cascade",
+  },
+  {
+    collectionId: "cv_sessions",
+    key: "report",
+    relatedCollectionId: "reports",
+    type: "oneToOne",
+    twoWay: true,
+    twoWayKey: "cvSession",
+    onDelete: "cascade",
   },
 ]
 
@@ -230,10 +261,15 @@ async function listAttributes(collectionId) {
   return result.attributes ?? []
 }
 
-async function ensureAttribute(collectionId, attribute) {
+async function getAttribute(collectionId, attributeKey) {
   const attributes = await listAttributes(collectionId)
+  return attributes.find((item) => item.key === attributeKey) ?? null
+}
 
-  if (attributes.some((item) => item.key === attribute.key)) {
+async function ensureAttribute(collectionId, attribute) {
+  const existing = await getAttribute(collectionId, attribute.key)
+
+  if (existing) {
     console.log(`attribute ${collectionId}.${attribute.key}: exists`)
     return
   }
@@ -256,7 +292,97 @@ async function ensureAttribute(collectionId, attribute) {
   console.log(`attribute ${collectionId}.${attribute.key}: created`)
 }
 
-async function waitForAttributes(collectionId, keys) {
+async function ensureRelationship(relationship) {
+  const existing = await getAttribute(relationship.collectionId, relationship.key)
+
+  if (existing) {
+    if (existing.type === "relationship") {
+      console.log(`relationship ${relationship.collectionId}.${relationship.key}: exists`)
+      return
+    }
+
+    throw new Error(
+      `Attribute ${relationship.collectionId}.${relationship.key} already exists and is not a relationship`,
+    )
+  }
+
+  await request(
+    `/databases/${DATABASE_ID}/collections/${relationship.collectionId}/attributes/relationship`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        relatedCollectionId: relationship.relatedCollectionId,
+        type: relationship.type,
+        twoWay: relationship.twoWay,
+        key: relationship.key,
+        twoWayKey: relationship.twoWayKey,
+        onDelete: relationship.onDelete,
+      }),
+    },
+  )
+
+  console.log(`relationship ${relationship.collectionId}.${relationship.key}: created`)
+}
+
+async function waitForRelationship(relationship) {
+  const keys = [relationship.key]
+  await waitForAttributes(relationship.collectionId, keys)
+
+  if (relationship.twoWay && relationship.twoWayKey) {
+    await waitForAttributes(relationship.relatedCollectionId, [relationship.twoWayKey])
+  }
+}
+
+async function getDocumentsTotal(collectionId) {
+  const result = await request(`/databases/${DATABASE_ID}/collections/${collectionId}/documents`)
+  return result.total ?? 0
+}
+
+function getAttributeDefinition(collectionId, attributeKey) {
+  const collection = collections.find((item) => item.id === collectionId)
+  return collection?.attributes.find((attribute) => attribute.key === attributeKey) ?? null
+}
+
+async function recreateAttribute(collectionId, attribute) {
+  await request(`/databases/${DATABASE_ID}/collections/${collectionId}/attributes/${attribute.key}`, {
+    method: "DELETE",
+  })
+
+  await ensureAttribute(collectionId, attribute)
+}
+
+async function recoverStuckAttributes(collectionId, keys) {
+  const total = await getDocumentsTotal(collectionId)
+
+  if (total !== 0) {
+    return false
+  }
+
+  const attributes = await listAttributes(collectionId)
+  const stuckKeys = keys.filter((key) => {
+    const status = attributes.find((attribute) => attribute.key === key)?.status
+    return status === "processing" || status === "stuck" || status === "failed"
+  })
+
+  if (stuckKeys.length === 0) {
+    return false
+  }
+
+  for (const key of stuckKeys) {
+    const attribute = getAttributeDefinition(collectionId, key)
+
+    if (!attribute) {
+      continue
+    }
+
+    console.log(`attribute ${collectionId}.${key}: recreating after stalled processing`)
+    await recreateAttribute(collectionId, attribute)
+  }
+
+  return true
+}
+
+async function waitForAttributes(collectionId, keys, attempt = 0) {
   const timeoutAt = Date.now() + 120000
 
   while (Date.now() < timeoutAt) {
@@ -273,6 +399,14 @@ async function waitForAttributes(collectionId, keys) {
     }
 
     await new Promise((resolve) => setTimeout(resolve, 1500))
+  }
+
+  if (attempt === 0) {
+    const recovered = await recoverStuckAttributes(collectionId, keys)
+
+    if (recovered) {
+      return waitForAttributes(collectionId, keys, 1)
+    }
   }
 
   throw new Error(`Timeout waiting for attributes in ${collectionId}`)
@@ -407,7 +541,34 @@ async function main() {
   await ensureBucket()
 
   for (const collection of collections) {
-    await provisionCollection(collection)
+    await ensureCollection(collection)
+  }
+
+  for (const collection of collections) {
+    for (const attribute of collection.attributes) {
+      await ensureAttribute(collection.id, attribute)
+    }
+  }
+
+  for (const collection of collections) {
+    await waitForAttributes(
+      collection.id,
+      collection.attributes.map((attribute) => attribute.key),
+    )
+  }
+
+  for (const relationship of relationships) {
+    await ensureRelationship(relationship)
+  }
+
+  for (const relationship of relationships) {
+    await waitForRelationship(relationship)
+  }
+
+  for (const collection of collections) {
+    for (const index of collection.indexes) {
+      await ensureIndex(collection.id, index)
+    }
   }
 
   console.log("provisioning: complete")

@@ -12,6 +12,7 @@ import {
   Role,
   Storage,
   Teams,
+  TablesDB
 } from "appwrite"
 
 export type AppwriteConfig = {
@@ -57,6 +58,7 @@ export function createAppwriteServices(client = createAppwriteClient()) {
     realtime: new Realtime(client),
     storage: new Storage(client),
     teams: new Teams(client),
+    tables: new TablesDB(client)
   }
 }
 
@@ -74,4 +76,5 @@ export const appwrite = {
   Role,
   Storage,
   Teams,
+  TablesDB,
 }

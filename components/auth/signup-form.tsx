@@ -49,16 +49,16 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
   }
 
   return (
-    <Card {...props}>
-      <CardHeader>
+    <Card className="quiet-surface bg-ec-surface-container-lowest" {...props}>
+      <CardHeader className="space-y-3 pb-2">
         <CardTitle>Crea una cuenta</CardTitle>
-        <CardDescription>
+        <CardDescription className="max-w-md text-ec-on-surface-variant">
           Ingresa tu información a continuación para crear tu cuenta
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-2">
         <form onSubmit={handleSubmit}>
-          <FieldGroup>
+          <FieldGroup className="gap-5">
             <Field>
               <FieldLabel htmlFor="name">Nombre completo</FieldLabel>
               <Input
@@ -76,8 +76,8 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                 id="email"
                 type="email"
                 placeholder="m@example.com"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 required
               />
               <FieldDescription>
@@ -118,11 +118,11 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                 <Button variant="outline" type="button" disabled={isLoading}>
                   Registrarse con Google
                 </Button>
-                <FieldDescription className="px-6 text-center">
+                <FieldDescription className="px-6 text-center text-ec-on-surface-variant">
                   ¿Ya tienes una cuenta? <Link href="/auth/login">Inicia sesión</Link>
                 </FieldDescription>
                 {formError || error ? (
-                  <FieldDescription className="px-6 text-center text-red-500">
+                  <FieldDescription className="px-6 text-center text-ec-error">
                     {formError || error}
                   </FieldDescription>
                 ) : null}

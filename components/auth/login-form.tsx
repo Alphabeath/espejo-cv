@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -27,6 +27,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { login, isLoading, error } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -36,7 +37,7 @@ export function LoginForm({
 
     try {
       await login({ email, password })
-      router.push("/dashboard")
+      router.replace(searchParams.get("redirectTo") || "/dashboard")
     } catch {
       return
     }
@@ -44,16 +45,16 @@ export function LoginForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
+      <Card className="quiet-surface bg-ec-surface-container-lowest">
+        <CardHeader className="space-y-3 pb-2">
           <CardTitle>Inicia sesión</CardTitle>
-          <CardDescription>
+          <CardDescription className="max-w-md text-ec-on-surface-variant">
             Estás a un paso de dominar tus entrevistas. Ingresa tus credenciales para comenzar tu viaje hacia el éxito profesional.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-2">
           <form onSubmit={handleSubmit}>
-            <FieldGroup>
+            <FieldGroup className="gap-5">
               <Field>
                 <FieldLabel htmlFor="email">Correo electrónico</FieldLabel>
                 <Input
@@ -70,7 +71,7 @@ export function LoginForm({
                   <FieldLabel htmlFor="password">Contraseña</FieldLabel>
                   <a
                     href="#"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                    className="ml-auto inline-block text-sm text-ec-on-surface-variant underline-offset-4 hover:text-ec-primary hover:underline"
                   >
                     ¿Olvidaste tu contraseña?
                   </a>
@@ -90,11 +91,11 @@ export function LoginForm({
                 <Button variant="outline" type="button" disabled={isLoading}>
                   Iniciar sesión con Google
                 </Button>
-                <FieldDescription className="text-center">
+                <FieldDescription className="text-center text-ec-on-surface-variant">
                   ¿No tienes una cuenta? <Link href="/auth/register">Regístrate</Link>
                 </FieldDescription>
                 {error ? (
-                  <FieldDescription className="text-center text-red-500">
+                  <FieldDescription className="text-center text-ec-error">
                     {error}
                   </FieldDescription>
                 ) : null}

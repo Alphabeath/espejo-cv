@@ -49,7 +49,7 @@ export function Hero() {
             <Button
               asChild
               size="lg"
-              className="signature-gradient px-6 text-base font-semibold text-ec-on-primary shadow-lg shadow-ec-primary/20 hover:scale-[1.02] hover:bg-transparent"
+              className="px-6 text-base font-semibold"
             >
               <Link href="#">Iniciar Sesión de Práctica</Link>
             </Button>
@@ -57,7 +57,7 @@ export function Hero() {
               asChild
               variant="outline"
               size="lg"
-              className="border-ec-outline-variant/50 bg-white/70 px-6 text-base text-ec-on-surface hover:bg-ec-surface-variant"
+              className="px-6 text-base"
             >
               <Link href="#">Ver Reporte de Ejemplo</Link>
             </Button>
@@ -80,11 +80,11 @@ export function Hero() {
         <div className="relative lg:col-span-5">
           <div className="absolute -top-10 -right-10 -z-10 h-64 w-64 rounded-full bg-ec-primary-fixed/30 blur-3xl" />
 
-          <Card className="animate-slide-in-right delay-300 relative overflow-hidden border border-white/60 bg-ec-surface-container-lowest/95 shadow-2xl shadow-indigo-900/5">
-            <CardHeader className="border-b border-ec-surface-container pb-5">
+          <Card className="quiet-surface animate-slide-in-right delay-300 relative overflow-hidden">
+            <CardHeader className="pb-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <Badge variant="outline" className="mb-3 border-ec-outline-variant/40 bg-white/80 text-ec-on-surface-variant">
+                  <Badge variant="outline" className="mb-3 border-ec-outline-variant/20 bg-ec-surface-container-high text-ec-on-surface-variant">
                     Preparacion guiada
                   </Badge>
                   <CardTitle className="text-lg font-semibold text-ec-on-surface">
@@ -101,7 +101,7 @@ export function Hero() {
             </CardHeader>
 
             <CardContent className="space-y-4 pt-6">
-              <div className="rounded-xl border border-dashed border-ec-outline-variant/40 bg-ec-surface-container-low p-6 transition-colors hover:border-ec-primary/30">
+              <div className="rounded-xl bg-ec-surface-container-low p-6 transition-colors hover:bg-ec-surface-container">
                 <div className="flex items-start gap-4">
                   <div className="rounded-lg bg-ec-primary/10 p-3 text-ec-primary-dim">
                     <Upload className="h-5 w-5" />
@@ -115,7 +115,7 @@ export function Hero() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-dashed border-ec-outline-variant/40 bg-ec-surface-container-low p-6 transition-colors hover:border-ec-primary/30">
+              <div className="rounded-xl bg-ec-surface-container-low p-6 transition-colors hover:bg-ec-surface-container">
                 <div className="flex items-start gap-4">
                   <div className="rounded-lg bg-ec-tertiary/10 p-3 text-ec-tertiary">
                     <FileText className="h-5 w-5" />
@@ -130,7 +130,7 @@ export function Hero() {
               </div>
             </CardContent>
 
-            <CardFooter className="flex-col items-stretch gap-4 border-t border-ec-surface-container pt-5">
+            <CardFooter className="flex-col items-stretch gap-4 pt-5">
               <div className="flex items-center justify-between text-sm text-ec-on-surface-variant">
                 <span>Tiempo de preparación</span>
                 <span className="font-semibold text-ec-on-surface">4 min</span>

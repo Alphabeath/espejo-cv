@@ -33,10 +33,10 @@ export function Testimonial() {
             alt="Candidata profesional"
             width={600}
             height={700}
-            className="rounded-2xl object-cover shadow-2xl grayscale transition-all duration-700 hover:grayscale-0"
+            className="rounded-2xl object-cover shadow-[0_36px_72px_-30px_oklch(0.27_0.015_210/0.35)] grayscale transition-all duration-700 hover:grayscale-0"
           />
 
-          <Card className="absolute -right-10 -bottom-10 hidden max-w-sm border-none bg-ec-primary text-ec-on-primary shadow-2xl md:flex">
+          <Card className="signature-gradient absolute -right-10 -bottom-10 hidden max-w-sm text-ec-on-primary shadow-[0_28px_64px_-34px_oklch(0.27_0.015_210/0.45)] md:flex">
             <CardHeader className="pb-3">
               <span
                 className="block text-6xl font-black opacity-20"
@@ -82,7 +82,7 @@ export function Testimonial() {
 
           <div className="space-y-6">
             {stats.map((stat) => (
-              <Card key={stat.title} className="border border-white/60 bg-white/80 shadow-sm">
+              <Card key={stat.title} className="bg-ec-surface-container-lowest shadow-none">
                 <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-2">
                   <div className="rounded-full bg-ec-primary/10 p-2 text-ec-primary-dim">
                     <CheckCircle2 className="h-6 w-6" />

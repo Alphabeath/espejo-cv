@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { User } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const navLinks = [
   { label: "Panel", href: "/" },
@@ -15,7 +16,7 @@ export function Navbar() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed top-0 z-50 w-full bg-ec-surface/80 backdrop-blur-md">
+    <nav className="quiet-glass fixed top-0 z-50 w-full border-b border-ec-outline-variant/15">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-8 py-4">
         {/* Logo */}
         <Link
@@ -36,7 +37,7 @@ export function Navbar() {
                 href={link.href}
                 className={
                   isActive
-                    ? "border-b-2 border-ec-primary pb-1 text-sm font-semibold tracking-tight text-ec-primary"
+                    ? "relative pb-1 text-sm font-semibold tracking-tight text-ec-primary after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:bg-ec-primary"
                     : "pb-1 text-sm font-medium tracking-tight text-ec-on-surface-variant transition-colors hover:text-ec-primary"
                 }
                 style={{ fontFamily: "var(--font-headline)" }}
@@ -48,18 +49,21 @@ export function Navbar() {
         </div>
 
         {/* User icon */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-lg"
-          aria-label="Cuenta de usuario"
-        >
-          <User className="h-5 w-5 text-ec-on-surface-variant" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-lg"
+            aria-label="Cuenta de usuario"
+          >
+            <User className="h-5 w-5 text-ec-on-surface-variant" />
+          </Button>
+        </div>
       </div>
 
       {/* Bottom separator — tonal transition, no harsh border */}
-      <div className="h-px w-full bg-ec-surface-container-high" />
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-ec-outline-variant/25 to-transparent" />
     </nav>
   )
 }

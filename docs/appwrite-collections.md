@@ -1,6 +1,6 @@
 # Colecciones de Appwrite para Espejo de CV
 
-Este documento define la estructura mínima recomendada para crear la persistencia del proyecto directamente en Appwrite.
+Este documento define una estructura recomendada para persistencia en Appwrite usando relationships como eje del modelo. La idea es que la sesión sea el agregado principal y que desde ella puedas resolver oferta, turnos y reporte sin depender de ids manuales repetidos en todas partes.
 
 ## Resumen
 
@@ -44,22 +44,49 @@ Crear una sola base de datos para todo el proyecto y mantener allí las coleccio
 - lectura: solo el usuario dueño del archivo,
 - escritura: solo el usuario dueño o backend con API key.
 
+## Modelo de relaciones recomendado
+
+La colección raíz debe ser `cv_sessions`. Todo lo demás cuelga de esa sesión.
+
+### Relaciones
+
+| Origen | Campo | Destino | Cardinalidad | Dirección recomendada | On delete | Motivo |
+| --- | --- | --- | --- | --- | --- | --- |
+| `cv_sessions` | `jobOffer` | `job_offers` | 1:1 | bidireccional | cascade | Cada sesión debe tener como máximo una oferta estructurada. |
+| `job_offers` | `cvSession` | `cv_sessions` | 1:1 inversa | bidireccional | restrict | Permite consultar la oferta desde la sesión y ubicar su sesión padre. |
+| `cv_sessions` | `interviewTurns` | `interview_turns` | 1:N | bidireccional | cascade | Una sesión genera muchos turnos. |
+| `interview_turns` | `cvSession` | `cv_sessions` | N:1 inversa | bidireccional | restrict | Hace posible listar y ordenar turnos por sesión. |
+| `cv_sessions` | `report` | `reports` | 1:1 | bidireccional | cascade | Una sesión termina en un solo reporte final. |
+| `reports` | `cvSession` | `cv_sessions` | 1:1 inversa | bidireccional | restrict | Permite obtener el reporte desde la sesión o validar unicidad por sesión. |
+
+### Criterio práctico
+
+- Usa relationships bidireccionales para navegación desde ambos lados.
+- Usa `cv_sessions` como documento raíz que se lista primero en dashboard e historial.
+- Mantén en `cv_sessions` solo datos de resumen que se consultan mucho.
+- Guarda el texto pesado y el detalle estructurado en `job_offers`, `interview_turns` y `reports`.
+- No mezcles relationship con un `sessionId` string paralelo para el mismo vínculo; termina duplicando reglas, índices y validaciones.
+- Appwrite no permite crear índices manuales sobre atributos `relationship`; la navegación relacional se resuelve por expansión y por la propia cardinalidad de la relación.
+
 ## Colección 1: `cv_sessions`
 
-Representa el estado completo de una sesión de análisis.
+Representa el estado completo de una sesión de análisis y funciona como documento raíz.
 
-### Atributos
+### Atributos de `cv_sessions`
 
 | Atributo | Tipo | Requerido | Único | Descripción |
-|---|---|---:|---:|---|
+| --- | --- | ---: | ---: | --- |
 | `userId` | string | sí | no | ID del usuario de Appwrite `Account` |
 | `cvFileId` | string | sí | no | Archivo del CV en `cv-files` |
 | `cvText` | string | sí | no | Texto extraído del CV |
-| `jobOfferText` | string | sí | no | Texto de la oferta laboral |
+| `jobOffer` | relationship | no | sí | Relación 1:1 con `job_offers` |
+| `report` | relationship | no | sí | Relación 1:1 con `reports` |
+| `interviewTurns` | relationship | no | no | Relación 1:N inversa con `interview_turns` |
 | `jobOfferSource` | string | sí | no | `paste`, `url` o `manual` |
-| `jobOfferTitle` | string | no | no | Título del cargo |
+| `jobOfferTitle` | string | no | no | Copia ligera del cargo para listar rápido |
+| `jobOfferCompany` | string | no | no | Copia ligera de la empresa para dashboard |
 | `status` | string | sí | no | `draft`, `analyzing`, `interviewing`, `completed`, `failed` |
-| `matchScore` | integer | no | no | Score total de match |
+| `matchScore` | integer | no | no | Score resumido para dashboard sin cargar reporte |
 | `strengthsCount` | integer | no | no | Número de fortalezas detectadas |
 | `gapsCount` | integer | no | no | Número de brechas detectadas |
 | `questionCount` | integer | no | no | Número total de preguntas |
@@ -67,15 +94,15 @@ Representa el estado completo de una sesión de análisis.
 | `completedAt` | datetime | no | no | Cierre de la sesión |
 | `lastActivityAt` | datetime | sí | no | Última actividad registrada |
 
-### Índices
+### Índices de `cv_sessions`
 
 | Índice | Campos | Tipo | Objetivo |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `idx_user_startedAt` | `userId`, `startedAt` | key | Listar sesiones del usuario por fecha |
 | `idx_user_status` | `userId`, `status` | key | Filtrar sesiones por estado |
-| `idx_status` | `status` | key | Buscar sesiones activas o fallidas |
+| `idx_status_lastActivityAt` | `status`, `lastActivityAt` | key | Buscar sesiones activas, recientes o atascadas |
 
-### Permisos
+### Permisos de `cv_sessions`
 
 - lectura: `user:{userId}`
 - escritura: `user:{userId}`
@@ -83,13 +110,13 @@ Representa el estado completo de una sesión de análisis.
 
 ## Colección 2: `job_offers`
 
-Guarda la oferta laboral asociada a una sesión.
+Guarda la oferta laboral asociada a una sesión. Aquí debe vivir el texto completo y la versión normalizada.
 
-### Atributos
+### Atributos de `job_offers`
 
 | Atributo | Tipo | Requerido | Único | Descripción |
-|---|---|---:|---:|---|
-| `sessionId` | string | sí | no | ID de la sesión asociada |
+| --- | --- | ---: | ---: | --- |
+| `cvSession` | relationship | sí | sí | Relación 1:1 con `cv_sessions` |
 | `title` | string | no | no | Título de la vacante |
 | `company` | string | no | no | Nombre de la empresa |
 | `sourceUrl` | string | no | no | URL de la oferta, si existe |
@@ -101,14 +128,17 @@ Guarda la oferta laboral asociada a una sesión.
 | `riskSignals` | string | no | no | Señales de riesgo serializadas |
 | `createdAt` | datetime | sí | no | Fecha de creación |
 
-### Índices
+### Índices de `job_offers`
 
 | Índice | Campos | Tipo | Objetivo |
-|---|---|---|---|
-| `idx_sessionId` | `sessionId` | key | Recuperar oferta por sesión |
+| --- | --- | --- | --- |
 | `idx_title` | `title` | key | Búsqueda simple por cargo |
+| `idx_company` | `company` | key | Filtrar ofertas por empresa en analítica o admin |
+| `idx_seniority` | `seniority` | key | Agrupar por seniority si luego haces métricas |
 
-### Permisos
+La cardinalidad 1:1 la resuelve la relationship `cvSession`, no un índice `unique` manual sobre ese atributo.
+
+### Permisos de `job_offers`
 
 - lectura: dueño de la sesión
 - escritura: dueño de la sesión o backend con API key
@@ -117,11 +147,11 @@ Guarda la oferta laboral asociada a una sesión.
 
 Registra cada pregunta y respuesta de la entrevista.
 
-### Atributos
+### Atributos de `interview_turns`
 
 | Atributo | Tipo | Requerido | Único | Descripción |
-|---|---|---:|---:|---|
-| `sessionId` | string | sí | no | ID de la sesión asociada |
+| --- | --- | ---: | ---: | --- |
+| `cvSession` | relationship | sí | no | Relación N:1 con `cv_sessions` |
 | `turnIndex` | integer | sí | no | Orden de la pregunta |
 | `question` | string | sí | no | Pregunta generada por IA |
 | `answer` | string | no | no | Respuesta del usuario |
@@ -132,14 +162,16 @@ Registra cada pregunta y respuesta de la entrevista.
 | `askedAt` | datetime | sí | no | Fecha en que se hizo la pregunta |
 | `answeredAt` | datetime | no | no | Fecha de respuesta |
 
-### Índices
+### Índices de `interview_turns`
 
 | Índice | Campos | Tipo | Objetivo |
-|---|---|---|---|
-| `idx_sessionId` | `sessionId` | key | Cargar los turnos de una sesión |
-| `idx_session_turnIndex` | `sessionId`, `turnIndex` | key | Ordenar y reconstruir la conversación |
+| --- | --- | --- | --- |
+| `idx_turnIndex` | `turnIndex` | key | Ordenar turnos cuando se consultan fuera de la expansión de la sesión |
+| `idx_status_askedAt` | `status`, `askedAt` | key | Revisar colas o monitorear progreso |
 
-### Permisos
+Los turnos deben cargarse principalmente desde la relationship `interviewTurns` de la sesión. Si necesitas orden estricto, ordénalos por `turnIndex` al expandir o al leer la colección.
+
+### Permisos de `interview_turns`
 
 - lectura: dueño de la sesión
 - escritura: dueño de la sesión o backend con API key
@@ -148,11 +180,11 @@ Registra cada pregunta y respuesta de la entrevista.
 
 Guarda el resultado final de la IA.
 
-### Atributos
+### Atributos de `reports`
 
 | Atributo | Tipo | Requerido | Único | Descripción |
-|---|---|---:|---:|---|
-| `sessionId` | string | sí | sí | Una sesión debe tener un solo reporte final |
+| --- | --- | ---: | ---: | --- |
+| `cvSession` | relationship | sí | sí | Relación 1:1 con `cv_sessions` |
 | `overallScore` | integer | sí | no | Score global |
 | `summary` | string | sí | no | Resumen general |
 | `strengths` | string | no | no | Fortalezas serializadas |
@@ -162,14 +194,16 @@ Guarda el resultado final de la IA.
 | `generatedAt` | datetime | sí | no | Fecha de generación |
 | `modelVersion` | string | no | no | Versión del modelo utilizado |
 
-### Índices
+### Índices de `reports`
 
 | Índice | Campos | Tipo | Objetivo |
-|---|---|---|---|
-| `idx_sessionId_unique` | `sessionId` | unique | Evitar duplicar el reporte final |
+| --- | --- | --- | --- |
 | `idx_overallScore` | `overallScore` | key | Analítica o ranking posterior |
+| `idx_generatedAt` | `generatedAt` | key | Ordenar reportes por fecha en panel interno |
 
-### Permisos
+La unicidad 1:1 entre sesión y reporte la resuelve la relationship, no un índice `unique` manual sobre `cvSession`.
+
+### Permisos de `reports`
 
 - lectura: dueño de la sesión
 - escritura: dueño de la sesión o backend con API key
@@ -184,35 +218,39 @@ No hace falta una colección `profiles`.
 - `email` solo para mostrarlo en UI si lo deseas
 - `name` o `displayName` si la app lo necesita en pantalla
 
-### Recomendación
+### Recomendación de identidad
 
-Usa `userId` en todas las colecciones donde necesites relacionar datos con el usuario.
+Usa `userId` en `cv_sessions` como llave de partición funcional. El resto de colecciones deben enlazarse por relationship a la sesión, no repetir `userId` salvo que luego tengas un caso fuerte de reporting o permisos administrativos.
 
 ## Configuración mínima para hackathon
 
-Si quieres acelerar al máximo la implementación, crea solo esto:
+Si quieres acelerar al máximo la implementación, crea esto:
 
 1. Base de datos `espejo_cv`
 2. Bucket `cv-files`
 3. Colección `cv_sessions`
-4. Colección `interview_turns`
-5. Colección `reports`
+4. Colección `job_offers`
+5. Colección `interview_turns`
+6. Colección `reports`
 
-`job_offers` es recomendable, pero si el tiempo aprieta puedes incrustar la oferta dentro de `cv_sessions`.
+Si el tiempo aprieta mucho, puedes omitir la relación 1:1 con `job_offers` y dejar la oferta embebida en `cv_sessions`, pero sería una simplificación temporal y no el modelo recomendado.
 
 ## Orden recomendado de implementación
 
 1. Crear la base de datos.
 2. Crear el bucket `cv-files`.
 3. Crear `cv_sessions`.
-4. Crear `interview_turns`.
-5. Crear `reports`.
-6. Agregar `job_offers` si hay tiempo.
-7. Conectar Next.js para escribir y leer los documentos.
+4. Crear `job_offers` y la relación 1:1 con `cv_sessions`.
+5. Crear `interview_turns` y la relación N:1 con `cv_sessions`.
+6. Crear `reports` y la relación 1:1 con `cv_sessions`.
+7. Agregar índices después de validar nombres finales de atributos.
+8. Conectar Next.js para escribir y leer documentos con relationships expandidas.
 
 ## Notas prácticas
 
 - Mantén los permisos cerrados por usuario desde el principio.
 - Guarda el CV como archivo, no como blob en la base de datos.
-- Evita relaciones complejas en Appwrite para la primera versión.
-- Usa `sessionId` como eje principal para reconstruir toda la experiencia.
+- Usa relationships para navegación y consistencia.
+- Usa campos denormalizados solo para lecturas frecuentes de dashboard.
+- Si Appwrite te obliga a elegir entre simplicidad y profundidad de expansión, prioriza que el dashboard lea desde `cv_sessions` y que la vista detallada expanda `jobOffer`, `report` e `interviewTurns`.
+- Usa la sesión como eje principal para reconstruir toda la experiencia.

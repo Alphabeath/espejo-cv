@@ -47,7 +47,10 @@ function ThemeHotkey() {
         return
       }
 
-      if (event.key.toLowerCase() !== "d") {
+      const pressedKey = typeof event.key === "string" ? event.key.toLowerCase() : ""
+      const pressedCode = typeof event.code === "string" ? event.code : ""
+
+      if (pressedKey !== "d" && pressedCode !== "KeyD") {
         return
       }
 

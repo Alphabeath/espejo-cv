@@ -9,13 +9,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        default:
+          "signature-gradient text-ec-on-primary shadow-[0_18px_42px_-24px_oklch(0.27_0.015_210/0.45)] hover:-translate-y-0.5 hover:shadow-[0_24px_52px_-26px_oklch(0.27_0.015_210/0.5)]",
         outline:
-          "border-border bg-background shadow-xs hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "border border-ec-outline-variant/20 bg-ec-surface-container-lowest text-ec-on-surface shadow-none hover:bg-ec-surface-container-high aria-expanded:bg-ec-surface-container-high aria-expanded:text-ec-on-surface",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          "bg-ec-surface-container-high text-ec-on-surface shadow-none hover:bg-ec-surface-container-highest aria-expanded:bg-ec-surface-container-highest aria-expanded:text-ec-on-surface",
         ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+          "bg-transparent text-ec-on-surface-variant hover:bg-ec-surface-container-high/70 hover:text-ec-on-surface aria-expanded:bg-ec-surface-container-high/70 aria-expanded:text-ec-on-surface",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",

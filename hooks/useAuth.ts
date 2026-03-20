@@ -67,10 +67,13 @@ export function useAuth() {
 	return {
 		user: userQuery.data ?? null,
 		isLoading:
-			userQuery.isLoading ||
 			loginMutation.isPending ||
 			registerMutation.isPending ||
 			logoutMutation.isPending,
+		isCheckingAuth: userQuery.isLoading,
+		isLoggingIn: loginMutation.isPending,
+		isRegistering: registerMutation.isPending,
+		isLoggingOut: logoutMutation.isPending,
 		error:
 			getErrorMessage(userQuery.error, "") ||
 			getErrorMessage(loginMutation.error, "") ||
