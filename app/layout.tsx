@@ -30,7 +30,7 @@ export default function RootLayout({
         "font-sans"
       )}
     >
-      <body className="min-h-svh text-ec-on-surface">
+      <body className="min-h-svh text-ec-on-surface" suppressHydrationWarning>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

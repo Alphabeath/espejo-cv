@@ -1,155 +1,165 @@
+"use client"
+
 import Link from "next/link"
-import { FileText, Settings, Sparkles, Upload } from "lucide-react"
+import Image from "next/image"
+import { ArrowRight, Sparkles } from "lucide-react"
+import * as motion from "motion/react-client"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 
-const practiceSignals = [
-  "Preguntas adaptadas al rol",
-  "Retroalimentacion accionable",
-  "Simulacion realista",
+const floatingBadges = [
+  { label: "IA Conversacional", delay: 0.8 },
+  { label: "Feedback en Tiempo Real", delay: 1.0 },
+  { label: "Preguntas por Rol", delay: 1.2 },
 ]
 
 export function Hero() {
   return (
-    <section className="mx-auto max-w-7xl px-8 py-20 md:py-32">
-      <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
-        <div className="space-y-8 lg:col-span-7">
-          <Badge className="animate-fade-in-up h-auto rounded-full bg-ec-secondary-container px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-ec-on-secondary-container hover:bg-ec-secondary-container">
-            Presentamos espejoCV
-          </Badge>
+    <section className="relative mx-auto max-w-7xl px-8 py-20 md:py-32 lg:py-40">
+      {/* Ambient glow behind hero */}
+      <div className="pointer-events-none absolute -top-32 left-1/2 -z-10 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-ec-primary-fixed/20 blur-[120px]" />
 
-          <h1
-            className="animate-fade-in-up delay-100 text-glow text-5xl font-extrabold leading-[1.1] tracking-tight text-ec-on-surface md:text-7xl"
+      <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-12">
+        {/* Left — Copy */}
+        <div className="space-y-8 lg:col-span-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Badge className="h-auto rounded-full bg-ec-secondary-container px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-ec-on-secondary-container hover:bg-ec-secondary-container">
+              <Sparkles className="mr-1.5 size-3" />
+              Simulador de Entrevistas con IA
+            </Badge>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            className="text-glow text-5xl font-extrabold leading-[1.05] tracking-tight text-ec-on-surface md:text-6xl lg:text-7xl"
             style={{ fontFamily: "var(--font-headline)" }}
           >
-            Prepárate para tu <br />
+            Practica tu
+            <br />
+            entrevista con
+            <br />
             <span className="italic text-ec-primary">
-              próximo paso profesional
+              inteligencia artificial
             </span>
-          </h1>
+          </motion.h1>
 
-          {/* Subtitle */}
-          <p className="animate-fade-in-up delay-200 max-w-xl text-lg leading-relaxed text-ec-on-surface-variant md:text-xl">
-            Sube tu CV y la descripción del puesto para iniciar una simulación
-            de entrevista realista impulsada por IA. Gana la confianza necesaria
-            para conseguir el rol.
-          </p>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="max-w-lg text-lg leading-relaxed text-ec-on-surface-variant md:text-xl"
+          >
+            Sube tu CV, pega la descripción del puesto y obtén una{" "}
+            <strong className="text-ec-on-surface">simulación realista</strong>{" "}
+            de entrevista. La IA analiza tus respuestas y te da feedback
+            accionable para mejorar antes del día real.
+          </motion.p>
 
-          <div className="animate-fade-in-up delay-300 flex flex-col gap-4 pt-4 sm:flex-row">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-col gap-4 pt-2 sm:flex-row"
+          >
             <Button
               asChild
               size="lg"
-              className="px-6 text-base font-semibold"
+              className="group px-8 text-base font-semibold"
             >
-              <Link href="#">Iniciar Sesión de Práctica</Link>
+              <Link href="/auth/login">
+                Comenzar Práctica Gratis
+                <ArrowRight className="ml-1 size-4 transition-transform group-hover:translate-x-1" />
+              </Link>
             </Button>
             <Button
               asChild
               variant="outline"
               size="lg"
-              className="px-6 text-base"
+              className="px-8 text-base"
             >
-              <Link href="#">Ver Reporte de Ejemplo</Link>
+              <Link href="#como-funciona">Ver Cómo Funciona</Link>
             </Button>
-          </div>
+          </motion.div>
 
-          <div className="animate-fade-in-up delay-400 flex flex-wrap gap-3">
-            {practiceSignals.map((signal) => (
-              <Badge
-                key={signal}
-                variant="outline"
-                className="h-auto rounded-full border-ec-outline-variant/50 bg-white/60 px-3 py-1.5 text-xs text-ec-on-surface-variant"
+          {/* Floating badges */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+            className="flex flex-wrap gap-3 pt-2"
+          >
+            {floatingBadges.map((badge) => (
+              <motion.div
+                key={badge.label}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{
+                  duration: 0.5,
+                  delay: badge.delay,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
               >
-                <Sparkles className="size-3 text-ec-primary" />
-                {signal}
-              </Badge>
+                <Badge
+                  variant="outline"
+                  className="h-auto rounded-full border-ec-outline-variant/30 bg-ec-surface-container-lowest/80 px-3.5 py-1.5 text-xs text-ec-on-surface-variant backdrop-blur-sm"
+                >
+                  {badge.label}
+                </Badge>
+              </motion.div>
             ))}
+          </motion.div>
+        </div>
+
+        {/* Right — Visual mockup */}
+        <motion.div
+          initial={{ opacity: 0, x: 40, scale: 0.95 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="relative lg:col-span-6"
+        >
+          {/* Gradient backdrop */}
+          <div className="absolute -top-16 -right-16 -z-10 h-72 w-72 rounded-full bg-ec-primary-fixed/25 blur-[80px]" />
+          <div className="absolute -bottom-12 -left-12 -z-10 h-48 w-48 rounded-full bg-ec-tertiary-fixed/20 blur-[60px]" />
+
+          <div className="quiet-surface overflow-hidden rounded-2xl">
+            <Image
+              src="/hero-mockup.png"
+              alt="Interfaz de simulación de entrevista con IA de espejoCV"
+              width={720}
+              height={480}
+              className="w-full object-cover"
+              priority
+            />
           </div>
-        </div>
 
-        <div className="relative lg:col-span-5">
-          <div className="absolute -top-10 -right-10 -z-10 h-64 w-64 rounded-full bg-ec-primary-fixed/30 blur-3xl" />
-
-          <Card className="quiet-surface animate-slide-in-right delay-300 relative overflow-hidden">
-            <CardHeader className="pb-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <Badge variant="outline" className="mb-3 border-ec-outline-variant/20 bg-ec-surface-container-high text-ec-on-surface-variant">
-                    Preparacion guiada
-                  </Badge>
-                  <CardTitle className="text-lg font-semibold text-ec-on-surface">
-                    Configuración de la Entrevista
-                  </CardTitle>
-                  <CardDescription className="mt-1 text-ec-on-surface-variant">
-                    Ajusta el contexto para recibir preguntas alineadas al puesto.
-                  </CardDescription>
-                </div>
-                <div className="rounded-full bg-ec-primary/10 p-2 text-ec-primary">
-                  <Settings className="h-5 w-5" />
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-4 pt-6">
-              <div className="rounded-xl bg-ec-surface-container-low p-6 transition-colors hover:bg-ec-surface-container">
-                <div className="flex items-start gap-4">
-                  <div className="rounded-lg bg-ec-primary/10 p-3 text-ec-primary-dim">
-                    <Upload className="h-5 w-5" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium text-ec-on-surface">Subir CV Profesional</p>
-                    <p className="text-sm text-ec-on-surface-variant">
-                      PDF, Word o Markdown con tu experiencia real.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl bg-ec-surface-container-low p-6 transition-colors hover:bg-ec-surface-container">
-                <div className="flex items-start gap-4">
-                  <div className="rounded-lg bg-ec-tertiary/10 p-3 text-ec-tertiary">
-                    <FileText className="h-5 w-5" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium text-ec-on-surface">Pegar Descripción del Puesto</p>
-                    <p className="text-sm text-ec-on-surface-variant">
-                      Adaptaremos las preguntas, profundidad y tono al rol.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-
-            <CardFooter className="flex-col items-stretch gap-4 pt-5">
-              <div className="flex items-center justify-between text-sm text-ec-on-surface-variant">
-                <span>Tiempo de preparación</span>
-                <span className="font-semibold text-ec-on-surface">4 min</span>
-              </div>
-              <Separator className="bg-ec-surface-container" />
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary" className="bg-ec-primary-container text-ec-on-primary-container">
-                  CV parsing
-                </Badge>
-                <Badge variant="secondary" className="bg-ec-secondary-container text-ec-on-secondary-container">
-                  Role fit
-                </Badge>
-                <Badge variant="secondary" className="bg-ec-tertiary-container text-ec-on-tertiary-container">
-                  Scoring
-                </Badge>
-              </div>
-            </CardFooter>
-          </Card>
-        </div>
+          {/* Floating stat card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 1.0, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute -bottom-6 -left-6 rounded-xl bg-ec-surface-container-lowest p-4 shadow-[0_24px_60px_-24px_oklch(0.27_0.015_210/0.28)] backdrop-blur-sm"
+          >
+            <p className="text-sm font-medium text-ec-on-surface-variant">
+              Confianza promedio
+            </p>
+            <p
+              className="text-3xl font-bold text-ec-primary"
+              style={{ fontFamily: "var(--font-headline)" }}
+            >
+              +94%
+            </p>
+            <p className="text-xs text-ec-on-surface-variant">
+              después de 3 sesiones
+            </p>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   )

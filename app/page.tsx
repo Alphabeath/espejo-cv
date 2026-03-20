@@ -1,4 +1,12 @@
-import { Navbar, Hero, FeaturesBento, Testimonial, Footer } from "@/components/landing"
+import {
+  Navbar,
+  Hero,
+  HowItWorks,
+  FeaturesBento,
+  Testimonial,
+  CallToAction,
+  Footer,
+} from "@/components/landing"
 
 export default function Page() {
   return (
@@ -6,8 +14,10 @@ export default function Page() {
       <Navbar />
       <main className="min-h-screen pt-24">
         <Hero />
+        <HowItWorks />
         <FeaturesBento />
         <Testimonial />
+        <CallToAction />
       </main>
       <Footer />
     </div>
