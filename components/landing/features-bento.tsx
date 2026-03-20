@@ -82,9 +82,9 @@ export function FeaturesBento() {
                   <Image
                     src="/feedback-visual.png"
                     alt="Visualización de análisis de feedback con IA"
-                    width={600}
-                    height={280}
-                    className="w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                    width={800}
+                    height={200}
+                    className="h-48 w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
                   />
                 </div>
               </CardContent>
@@ -124,13 +124,13 @@ export function FeaturesBento() {
                   ronda final de entrevistas.
                 </p>
               </CardContent>
-              <CardFooter className="block pt-6">
+              <CardFooter className="block pt-4">
                 <Image
                   src="/interview-ui.png"
                   alt="Interfaz de entrevista realista"
                   width={400}
                   height={180}
-                  className="w-full rounded-lg object-cover opacity-90 shadow-sm transition-transform duration-500 group-hover:scale-[1.03]"
+                  className="w-full max-h-44 rounded-lg object-cover opacity-90 shadow-sm transition-transform duration-500 group-hover:scale-[1.03]"
                 />
               </CardFooter>
             </Card>
