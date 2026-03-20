@@ -43,7 +43,7 @@ export function DashboardSidebar({
         </div>
       </div>
 
-      <Separator className="mb-4 bg-ec-outline-variant/20" />
+      <Separator className="mb-4 mt-4 bg-ec-outline-variant/20" />
 
       <nav className="flex flex-col gap-0.5">
         {dashboardNavItems.map((item) => {

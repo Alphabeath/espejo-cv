@@ -8,16 +8,10 @@ import {
   PracticeInterviewStep,
   PracticeResultsStep,
 } from "@/components/practice"
-import type { InterviewMessage, PracticeResult } from "@/components/practice"
+import type { PracticeResult } from "@/components/practice"
 
 // ─── Step machine ────────────────────────────────────────────────────────────
 type Step = "upload" | "interview" | "results"
-
-// ─── Mock helpers (replace with real API calls) ──────────────────────────────
-let msgCounter = 0
-function uid() {
-  return `msg-${++msgCounter}-${Date.now()}`
-}
 
 const MOCK_QUESTIONS = [
   "Cuéntame sobre tu experiencia más relevante para este puesto y por qué te interesa.",
@@ -71,9 +65,9 @@ export default function PracticePage() {
 
   // Interview step state
   const [jobPosition, setJobPosition] = useState("")
-  const [messages, setMessages] = useState<InterviewMessage[]>([])
   const [isAiTyping, setIsAiTyping] = useState(false)
-  const [questionIndex, setQuestionIndex] = useState(0)
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [isInterviewComplete, setIsInterviewComplete] = useState(false)
   const [isFinishing, setIsFinishing] = useState(false)
 
   // Results state
@@ -89,55 +83,31 @@ export default function PracticePage() {
     // Simulate latency for uploading / preparing interview
     await new Promise((r) => setTimeout(r, 1200))
 
-    const firstQuestion = MOCK_QUESTIONS[0] ?? "Cuéntame sobre ti."
-    setMessages([
-      {
-        id: uid(),
-        role: "ai",
-        content: `Hola 👋 Seré tu entrevistador hoy para el puesto: **${position}**.\n\n${firstQuestion}`,
-        timestamp: new Date(),
-      },
-    ])
-    setQuestionIndex(1)
+    setCurrentQuestionIndex(0)
+    setIsInterviewComplete(false)
     setIsStarting(false)
     setStep("interview")
   }, [])
 
   /** Step 2: user sends an answer */
   const handleSendAnswer = useCallback(
-    async (answer: string) => {
-      const userMsg: InterviewMessage = {
-        id: uid(),
-        role: "user",
-        content: answer,
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, userMsg])
+    async () => {
       setIsAiTyping(true)
 
       // Simulate AI thinking
       await new Promise((r) => setTimeout(r, 1400 + Math.random() * 800))
 
-      const nextQuestion = MOCK_QUESTIONS[questionIndex]
-      const isLast = !nextQuestion
+      const isLastQuestion = currentQuestionIndex >= MOCK_QUESTIONS.length - 1
 
-      const aiContent = isLast
-        ? "Gracias por todas tus respuestas. Fue un placer entrevistarte. Presiona **«Ver resultados»** para conocer tu evaluación."
-        : nextQuestion
+      if (isLastQuestion) {
+        setIsInterviewComplete(true)
+      } else {
+        setCurrentQuestionIndex((index) => index + 1)
+      }
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: uid(),
-          role: "ai",
-          content: aiContent,
-          timestamp: new Date(),
-        },
-      ])
       setIsAiTyping(false)
-      setQuestionIndex((i) => i + 1)
     },
-    [questionIndex],
+    [currentQuestionIndex],
   )
 
   /** Step 2 → 3: user finishes interview */
@@ -153,11 +123,10 @@ export default function PracticePage() {
   /** Step 3 → 1: start over */
   const handleNewPractice = useCallback(() => {
     setStep("upload")
-    setMessages([])
-    setQuestionIndex(0)
+    setCurrentQuestionIndex(0)
+    setIsInterviewComplete(false)
     setJobPosition("")
     setResult(null)
-    msgCounter = 0
   }, [])
 
   // ── Render ──────────────────────────────────────────────────────────────
@@ -198,9 +167,10 @@ export default function PracticePage() {
       {step === "interview" && (
         <PracticeInterviewStep
           jobPosition={jobPosition}
-          messages={messages}
+          currentQuestion={MOCK_QUESTIONS[currentQuestionIndex] ?? ""}
           isAiTyping={isAiTyping}
-          questionIndex={questionIndex}
+          isInterviewComplete={isInterviewComplete}
+          questionIndex={Math.min(currentQuestionIndex + 1, MOCK_QUESTIONS.length)}
           totalQuestions={MOCK_QUESTIONS.length}
           onSendAnswer={handleSendAnswer}
           onFinish={handleFinish}
