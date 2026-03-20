@@ -16,7 +16,7 @@ const floatingBadges = [
 
 export function Hero() {
   return (
-    <section className="relative mx-auto max-w-7xl px-8 py-20 md:py-32 lg:py-40">
+    <section className="relative mx-auto max-w-7xl px-8 pb-20 pt-4 md:pb-32 md:pt-4 lg:pb-40 lg:pt-8">
       {/* Ambient glow behind hero */}
       <div className="pointer-events-none absolute -top-32 left-1/2 -z-10 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-ec-primary-fixed/20 blur-[120px]" />
 
