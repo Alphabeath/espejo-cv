@@ -1,5 +1,7 @@
-import Image from "next/image"
-import { CheckCircle2 } from "lucide-react"
+"use client"
+
+import { CheckCircle2, Quote } from "lucide-react"
+import * as motion from "motion/react-client"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -10,95 +12,160 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-const stats = [
+const testimonials = [
   {
-    title: "94% de aumento en confianza",
-    description:
-      "Los candidatos informan sentirse significativamente más preparados después de solo tres sesiones.",
+    quote:
+      "Se sintió como una conversación real, no una máquina. Fui a mi entrevista real sin nervios.",
+    name: "Laura R.",
+    role: "Product Designer",
+    initials: "LR",
   },
   {
-    title: "Contenido Personalizado",
+    quote:
+      "Las preguntas de seguimiento fueron tan precisas que pensé que era un humano. Conseguí el trabajo.",
+    name: "Carlos M.",
+    role: "Frontend Developer",
+    initials: "CM",
+  },
+  {
+    quote:
+      "El feedback sobre mi tono me hizo darme cuenta de mis puntos ciegos. Excelente herramienta.",
+    name: "Sofía T.",
+    role: "Data Analyst",
+    initials: "ST",
+  },
+]
+
+const stats = [
+  {
+    value: "94%",
+    label: "Aumento en confianza",
     description:
-      "Cada pregunta se genera dinámicamente según el trabajo específico que buscas.",
+      "Los candidatos se sienten significativamente más preparados después de solo tres sesiones.",
+  },
+  {
+    value: "3x",
+    label: "Más probabilidades de avanzar",
+    description:
+      "Quienes practican con espejoCV avanzan tres veces más en procesos de selección.",
+  },
+  {
+    value: "4 min",
+    label: "Para empezar",
+    description:
+      "El tiempo desde subir tu CV hasta tu primera pregunta simulada.",
   },
 ]
 
 export function Testimonial() {
   return (
-    <section className="mx-auto max-w-7xl px-8 py-32">
-      <div className="grid grid-cols-1 items-center gap-20 lg:grid-cols-2">
-        <div className="relative">
-          <Image
-            src="/testimonial.png"
-            alt="Candidata profesional"
-            width={600}
-            height={700}
-            className="rounded-2xl object-cover shadow-[0_36px_72px_-30px_oklch(0.27_0.015_210/0.35)] grayscale transition-all duration-700 hover:grayscale-0"
-          />
-
-          <Card className="signature-gradient absolute -right-10 -bottom-10 hidden max-w-sm text-ec-on-primary shadow-[0_28px_64px_-34px_oklch(0.27_0.015_210/0.45)] md:flex">
-            <CardHeader className="pb-3">
-              <span
-                className="block text-6xl font-black opacity-20"
-                style={{ fontFamily: "var(--font-headline)" }}
-              >
-                &ldquo;
-              </span>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <p
-                className="text-xl leading-tight"
-                style={{ fontFamily: "var(--font-headline)" }}
-              >
-                Se sintió como una conversación real, no una máquina. Fui a mi
-                entrevista real sin nervios.
-              </p>
-              <div className="flex items-center gap-3">
-                <Avatar className="bg-white/10 after:border-white/15">
-                  <AvatarFallback className="bg-transparent text-white">
-                    LR
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium text-white">Laura R.</p>
-                  <p className="text-sm text-white/70">Product Designer</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="lg:pl-12">
-          <Badge className="mb-6 h-auto bg-ec-primary-container px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-ec-on-primary-container hover:bg-ec-primary-container">
+    <section className="bg-ec-surface-container-low py-24 md:py-32">
+      <div className="mx-auto max-w-7xl px-8">
+        {/* Section header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="mb-16 text-center"
+        >
+          <Badge className="mb-5 h-auto bg-ec-primary-container px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-ec-on-primary-container hover:bg-ec-primary-container">
             Historias de Éxito
           </Badge>
           <h2
-            className="mb-8 text-4xl font-bold leading-tight text-ec-on-surface"
+            className="mb-4 text-3xl font-bold text-ec-on-surface md:text-5xl"
             style={{ fontFamily: "var(--font-headline)" }}
           >
-            De los nervios a la <br />
-            autoridad serena.
+            De los nervios a la{" "}
+            <span className="italic text-ec-primary">autoridad serena</span>
           </h2>
+          <p className="mx-auto max-w-2xl text-lg text-ec-on-surface-variant">
+            Candidatos reales, resultados reales. Así es como espejoCV ha
+            transformado la preparación para entrevistas.
+          </p>
+        </motion.div>
 
-          <div className="space-y-6">
-            {stats.map((stat) => (
-              <Card key={stat.title} className="bg-ec-surface-container-lowest shadow-none">
+        {/* Testimonials row */}
+        <div className="mb-20 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {testimonials.map((t, index) => (
+            <motion.div
+              key={t.name}
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{
+                duration: 0.6,
+                delay: index * 0.12,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            >
+              <Card className="group h-full transition-shadow duration-500 hover:shadow-[0_24px_60px_-24px_oklch(0.27_0.015_210/0.2)]">
+                <CardContent className="space-y-5 p-8">
+                  <Quote className="h-8 w-8 text-ec-primary/20" />
+                  <p
+                    className="text-lg leading-snug text-ec-on-surface"
+                    style={{ fontFamily: "var(--font-headline)" }}
+                  >
+                    &ldquo;{t.quote}&rdquo;
+                  </p>
+                  <div className="flex items-center gap-3 pt-2">
+                    <Avatar className="bg-ec-primary/10">
+                      <AvatarFallback className="bg-transparent text-sm font-semibold text-ec-primary">
+                        {t.initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium text-ec-on-surface">{t.name}</p>
+                      <p className="text-sm text-ec-on-surface-variant">
+                        {t.role}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{
+                duration: 0.5,
+                delay: index * 0.1,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            >
+              <Card className="h-full bg-ec-surface-container-lowest shadow-none">
                 <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-2">
                   <div className="rounded-full bg-ec-primary/10 p-2 text-ec-primary-dim">
-                    <CheckCircle2 className="h-6 w-6" />
+                    <CheckCircle2 className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle className="mb-1 text-lg font-bold text-ec-on-surface">
-                      {stat.title}
-                    </CardTitle>
-                    <p className="text-sm text-ec-on-surface-variant">
-                      {stat.description}
+                    <p
+                      className="text-3xl font-black text-ec-primary"
+                      style={{ fontFamily: "var(--font-headline)" }}
+                    >
+                      {stat.value}
                     </p>
+                    <CardTitle className="text-sm font-bold text-ec-on-surface">
+                      {stat.label}
+                    </CardTitle>
                   </div>
                 </CardHeader>
+                <CardContent>
+                  <p className="text-sm leading-relaxed text-ec-on-surface-variant">
+                    {stat.description}
+                  </p>
+                </CardContent>
               </Card>
-            ))}
-          </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>

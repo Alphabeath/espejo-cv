@@ -1,5 +1,7 @@
 export { Navbar } from "./navbar"
 export { Hero } from "./hero"
+export { HowItWorks } from "./how-it-works"
 export { FeaturesBento } from "./features-bento"
 export { Testimonial } from "./testimonial"
+export { CallToAction } from "./call-to-action"
 export { Footer } from "./footer"
