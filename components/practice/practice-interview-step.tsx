@@ -21,24 +21,30 @@ interface PracticeInterviewStepProps {
   jobPosition: string
   currentQuestion: string
   isAiTyping: boolean
+  isTranscribing?: boolean
   isInterviewComplete?: boolean
   questionIndex: number
   totalQuestions: number
   onSendAnswer: (answer: string) => void
+  onTranscribeAudio: (audioBlob: Blob) => Promise<string>
   onFinish: () => void
   isFinishing?: boolean
+  error?: string | null
 }
 
 export function PracticeInterviewStep({
   jobPosition,
   currentQuestion,
   isAiTyping,
+  isTranscribing = false,
   isInterviewComplete = false,
   questionIndex,
   totalQuestions,
   onSendAnswer,
+  onTranscribeAudio,
   onFinish,
   isFinishing = false,
+  error = null,
 }: PracticeInterviewStepProps) {
   const [answer, setAnswer] = useState("")
   const [isListening, setIsListening] = useState(false)
@@ -46,6 +52,7 @@ export function PracticeInterviewStep({
   const canSend =
     answer.trim().length > 0 &&
     !isAiTyping &&
+    !isTranscribing &&
     !isFinishing &&
     !isInterviewComplete
 
@@ -67,6 +74,8 @@ export function PracticeInterviewStep({
     ? "Sesión completada"
     : isAiTyping
       ? "Analizando respuesta"
+      : isTranscribing
+        ? "Transcribiendo audio"
       : isListening
         ? "Escuchando respuesta"
         : "Tu turno"
@@ -118,15 +127,6 @@ export function PracticeInterviewStep({
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
-          <div className="flex min-w-22 flex-col rounded-2xl bg-ec-surface-container-low px-4 py-2.5">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ec-on-surface-variant">
-              Preguntas
-            </span>
-            <span className="mt-0.5 text-xl font-bold text-ec-on-surface">
-              {questionIndex}
-              <span className="ml-0.5 text-xs font-medium text-ec-on-surface-variant"> /{totalQuestions}</span>
-            </span>
-          </div>
           <div className="flex min-w-18 flex-col rounded-2xl bg-ec-surface-container-low px-4 py-2.5">
             <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ec-on-surface-variant">
               Avance
@@ -136,12 +136,6 @@ export function PracticeInterviewStep({
               <span className="text-sm">%</span>
             </span>
           </div>
-          <Badge
-            variant="secondary"
-            className="hidden rounded-full bg-ec-secondary-container px-3 text-xs font-medium text-ec-on-secondary-container md:flex"
-          >
-            {statusLabel}
-          </Badge>
         </div>
       </header>
 
@@ -152,9 +146,9 @@ export function PracticeInterviewStep({
               {isInterviewComplete ? "Resumen" : `Pregunta ${questionIndex}`}
             </Badge>
 
-            <div className="quiet-surface max-w-4xl rounded-[2rem] px-6 py-8 md:px-10 md:py-12">
+            <div className="quiet-surface w-full max-w-6xl rounded-[2rem] px-6 py-8 md:px-10 md:py-10 xl:max-w-7xl xl:px-12">
               {isPersonaReady ? (
-                <p className="font-headline text-2xl font-bold leading-tight text-ec-on-surface text-glow md:text-4xl md:leading-[1.15]">
+                <p className="font-headline text-xl font-bold leading-tight text-ec-on-surface text-glow md:text-[2rem] md:leading-[1.15] xl:text-[2rem]">
                   {promptText}
                 </p>
               ) : (
@@ -178,7 +172,7 @@ export function PracticeInterviewStep({
                 state={personaState}
                 variant="mana"
                 className={cn(
-                  "size-36 transition-opacity duration-500 md:size-44",
+                    "size-36 transition-opacity duration-500 md:size-44",
                   isPersonaReady ? "opacity-100" : "opacity-0",
                 )}
                 onReady={() => setIsPersonaReady(true)}
@@ -194,8 +188,10 @@ export function PracticeInterviewStep({
               <SpeechInput
                 type="button"
                 size="icon"
-                disabled={isAiTyping || isInterviewComplete || isFinishing || !isPersonaReady}
+                disabled={isAiTyping || isTranscribing || isInterviewComplete || isFinishing || !isPersonaReady}
                 onListeningChange={setIsListening}
+                onAudioRecorded={onTranscribeAudio}
+                preferredMode="server-transcription"
                 onTranscriptionChange={(text) => {
                   setAnswer((prev) => {
                     const normalized = text.trim()
@@ -210,6 +206,11 @@ export function PracticeInterviewStep({
                 <Waves className="size-3.5" />
                 <span>{isPersonaReady ? statusLabel : "Inicializando entrevista"}</span>
               </div>
+              {error && (
+                <p className="max-w-sm text-center text-xs text-destructive" role="alert">
+                  {error}
+                </p>
+              )}
             </div>
           </div>
         </section>
@@ -228,7 +229,7 @@ export function PracticeInterviewStep({
             </p>
           )}
 
-          <div className="quiet-surface mx-auto flex w-full max-w-4xl flex-col gap-4 rounded-[2rem] p-4 md:p-5">
+          <div className="quiet-surface mx-auto flex w-full max-w-6xl flex-col gap-4 rounded-[2rem] p-4 md:p-5 xl:max-w-7xl">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-ec-on-surface-variant">
               <Sparkles className="size-3.5" />
               Tu respuesta
@@ -243,10 +244,10 @@ export function PracticeInterviewStep({
                   ? "La entrevista terminó. Ya puedes revisar los resultados."
                   : "Tu respuesta aparecerá aquí mientras hablas o escribes."
               }
-              disabled={isAiTyping || isInterviewComplete || isFinishing}
-              rows={4}
+              disabled={isAiTyping || isTranscribing || isInterviewComplete || isFinishing}
+              rows={3}
               className={cn(
-                "min-h-28 resize-none rounded-2xl border-transparent bg-ec-surface-container-lowest px-4 py-3 text-sm shadow-none",
+                "min-h-22 resize-none rounded-2xl border-transparent bg-ec-surface-container-lowest px-4 py-3 text-sm shadow-none md:min-h-12",
                 "focus-visible:border-ec-primary/35 focus-visible:ring-0",
                 "placeholder:text-ec-on-surface-variant/45 transition-all",
               )}

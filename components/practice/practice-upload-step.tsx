@@ -11,9 +11,14 @@ import { cn } from "@/lib/utils"
 interface PracticeUploadStepProps {
   onStart: (cvFile: File, jobPosition: string) => void
   isLoading?: boolean
+  error?: string | null
 }
 
-export function PracticeUploadStep({ onStart, isLoading = false }: PracticeUploadStepProps) {
+export function PracticeUploadStep({
+  onStart,
+  isLoading = false,
+  error = null,
+}: PracticeUploadStepProps) {
   const [cvFile, setCvFile] = useState<File | null>(null)
   const [jobPosition, setJobPosition] = useState("")
   const [isDragging, setIsDragging] = useState(false)
@@ -174,6 +179,12 @@ export function PracticeUploadStep({ onStart, isLoading = false }: PracticeUploa
           </p>
         )}
       </div>
+
+      {error && (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

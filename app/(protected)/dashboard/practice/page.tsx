@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
 
+import { useAI } from "@/hooks/useAI"
 import {
   PracticeUploadStep,
   PracticeInterviewStep,
@@ -13,18 +14,10 @@ import type { PracticeResult } from "@/components/practice"
 // ─── Step machine ────────────────────────────────────────────────────────────
 type Step = "upload" | "interview" | "results"
 
-const MOCK_QUESTIONS = [
-  "Cuéntame sobre tu experiencia más relevante para este puesto y por qué te interesa.",
-  "¿Cómo manejas situaciones de alta presión o plazos ajustados? Dame un ejemplo concreto.",
-  "Describe un proyecto técnico del que estés orgulloso. ¿Cuáles fueron los desafíos clave?",
-  "¿Qué metodologías de trabajo en equipo has aplicado y cuál prefieres?",
-  "¿Cómo te mantienes actualizado en tu campo? ¿Qué aprendiste recientemente?",
-]
-
 const MOCK_RESULT: PracticeResult = {
   score: 74,
   jobPosition: "",
-  totalQuestions: MOCK_QUESTIONS.length,
+  totalQuestions: 0,
   duration: 312,
   summary:
     "Demostraste sólidos conocimientos técnicos y buena comunicación. Tu mayor área de crecimiento es estructurar las respuestas con el método STAR para mayor claridad y persuasión ante el entrevistador.",
@@ -57,11 +50,18 @@ const MOCK_RESULT: PracticeResult = {
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function PracticePage() {
   const router = useRouter()
+  const {
+    interviewPlan,
+    questions,
+    isAnalyzing,
+    isTranscribing,
+    error: aiError,
+    createInterviewPlan,
+    transcribeAudio,
+    reset: resetAI,
+  } = useAI()
 
   const [step, setStep] = useState<Step>("upload")
-
-  // Upload step state
-  const [isStarting, setIsStarting] = useState(false)
 
   // Interview step state
   const [jobPosition, setJobPosition] = useState("")
@@ -76,28 +76,26 @@ export default function PracticePage() {
   // ── Handlers ────────────────────────────────────────────────────────────
 
   /** Step 1 → 2: user submits CV + job position */
-  const handleStart = useCallback(async (_cvFile: File, position: string) => {
-    setIsStarting(true)
+  const handleStart = useCallback(async (cvFile: File, position: string) => {
+    const plan = await createInterviewPlan(cvFile, position)
+
     setJobPosition(position)
-
-    // Simulate latency for uploading / preparing interview
-    await new Promise((r) => setTimeout(r, 1200))
-
     setCurrentQuestionIndex(0)
     setIsInterviewComplete(false)
-    setIsStarting(false)
-    setStep("interview")
-  }, [])
+
+    if (plan.questions.length > 0) {
+      setStep("interview")
+    }
+  }, [createInterviewPlan])
 
   /** Step 2: user sends an answer */
   const handleSendAnswer = useCallback(
-    async () => {
+    async (_answer: string) => {
       setIsAiTyping(true)
 
-      // Simulate AI thinking
       await new Promise((r) => setTimeout(r, 1400 + Math.random() * 800))
 
-      const isLastQuestion = currentQuestionIndex >= MOCK_QUESTIONS.length - 1
+      const isLastQuestion = currentQuestionIndex >= questions.length - 1
 
       if (isLastQuestion) {
         setIsInterviewComplete(true)
@@ -107,18 +105,17 @@ export default function PracticePage() {
 
       setIsAiTyping(false)
     },
-    [currentQuestionIndex],
+    [currentQuestionIndex, questions.length],
   )
 
   /** Step 2 → 3: user finishes interview */
   const handleFinish = useCallback(async () => {
     setIsFinishing(true)
-    // Simulate scoring
     await new Promise((r) => setTimeout(r, 1800))
-    setResult({ ...MOCK_RESULT, jobPosition })
+    setResult({ ...MOCK_RESULT, jobPosition, totalQuestions: questions.length })
     setIsFinishing(false)
     setStep("results")
-  }, [jobPosition])
+  }, [jobPosition, questions.length])
 
   /** Step 3 → 1: start over */
   const handleNewPractice = useCallback(() => {
@@ -127,7 +124,8 @@ export default function PracticePage() {
     setIsInterviewComplete(false)
     setJobPosition("")
     setResult(null)
-  }, [])
+    resetAI()
+  }, [resetAI])
 
   // ── Render ──────────────────────────────────────────────────────────────
 
@@ -161,20 +159,27 @@ export default function PracticePage() {
 
       {/* Step content */}
       {step === "upload" && (
-        <PracticeUploadStep onStart={handleStart} isLoading={isStarting} />
+        <PracticeUploadStep
+          onStart={handleStart}
+          isLoading={isAnalyzing}
+          error={aiError}
+        />
       )}
 
       {step === "interview" && (
         <PracticeInterviewStep
-          jobPosition={jobPosition}
-          currentQuestion={MOCK_QUESTIONS[currentQuestionIndex] ?? ""}
+          jobPosition={interviewPlan?.roleSummary ?? jobPosition}
+          currentQuestion={questions[currentQuestionIndex]?.text ?? ""}
           isAiTyping={isAiTyping}
+          isTranscribing={isTranscribing}
           isInterviewComplete={isInterviewComplete}
-          questionIndex={Math.min(currentQuestionIndex + 1, MOCK_QUESTIONS.length)}
-          totalQuestions={MOCK_QUESTIONS.length}
+          questionIndex={Math.min(currentQuestionIndex + 1, Math.max(questions.length, 1))}
+          totalQuestions={questions.length}
           onSendAnswer={handleSendAnswer}
+          onTranscribeAudio={transcribeAudio}
           onFinish={handleFinish}
           isFinishing={isFinishing}
+          error={aiError}
         />
       )}
 

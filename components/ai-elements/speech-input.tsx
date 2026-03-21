@@ -59,6 +59,8 @@ declare global {
 
 type SpeechInputMode = "speech-recognition" | "media-recorder" | "none";
 
+type SpeechInputPreference = "auto" | "server-transcription";
+
 export type SpeechInputProps = ComponentProps<typeof Button> & {
   onTranscriptionChange?: (text: string) => void;
   onListeningChange?: (isListening: boolean) => void;
@@ -69,12 +71,24 @@ export type SpeechInputProps = ComponentProps<typeof Button> & {
    * Return the transcribed text, which will be passed to onTranscriptionChange.
    */
   onAudioRecorded?: (audioBlob: Blob) => Promise<string>;
+  onProcessingChange?: (isProcessing: boolean) => void;
+  preferredMode?: SpeechInputPreference;
   lang?: string;
 };
 
-const detectSpeechInputMode = (): SpeechInputMode => {
+const detectSpeechInputMode = (
+  preferredMode: SpeechInputPreference
+): SpeechInputMode => {
   if (typeof window === "undefined") {
     return "none";
+  }
+
+  if (
+    preferredMode === "server-transcription" &&
+    "MediaRecorder" in window &&
+    "mediaDevices" in navigator
+  ) {
+    return "media-recorder";
   }
 
   if ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) {
@@ -93,12 +107,16 @@ export const SpeechInput = ({
   onTranscriptionChange,
   onListeningChange,
   onAudioRecorded,
+  onProcessingChange,
+  preferredMode = "auto",
   lang = "en-US",
   ...props
 }: SpeechInputProps) => {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [mode] = useState<SpeechInputMode>(detectSpeechInputMode);
+  const [mode] = useState<SpeechInputMode>(() =>
+    detectSpeechInputMode(preferredMode)
+  );
   const [isRecognitionReady, setIsRecognitionReady] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -112,15 +130,23 @@ export const SpeechInput = ({
   );
   const onAudioRecordedRef =
     useRef<SpeechInputProps["onAudioRecorded"]>(onAudioRecorded);
+  const onProcessingChangeRef = useRef<
+    SpeechInputProps["onProcessingChange"]
+  >(onProcessingChange);
 
   // Keep refs in sync
   onTranscriptionChangeRef.current = onTranscriptionChange;
   onListeningChangeRef.current = onListeningChange;
   onAudioRecordedRef.current = onAudioRecorded;
+  onProcessingChangeRef.current = onProcessingChange;
 
   useEffect(() => {
     onListeningChangeRef.current?.(isListening);
   }, [isListening]);
+
+  useEffect(() => {
+    onProcessingChangeRef.current?.(isProcessing);
+  }, [isProcessing]);
 
   // Initialize Speech Recognition when mode is speech-recognition
   useEffect(() => {
