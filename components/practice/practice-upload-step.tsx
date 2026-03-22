@@ -55,130 +55,131 @@ export function PracticeUploadStep({
       </div>
 
       <div className="quiet-surface rounded-3xl p-6 md:p-8">
-        <div className="grid gap-8 md:grid-cols-2 md:items-stretch">
-        {/* CV Upload zone */}
-        <div className="flex h-full min-h-80 flex-col gap-3">
-          <Label className="text-sm font-semibold text-ec-on-surface">
-            Tu currículum <span className="text-ec-on-surface-variant font-normal">(PDF)</span>
-          </Label>
+        <div className="grid gap-10 lg:grid-cols-[280px_1fr] items-start">
+          {/* CV Upload zone */}
+          <div className="flex flex-col gap-3 lg:sticky lg:top-8">
+            <Label className="text-sm font-semibold text-ec-on-surface">
+              Tu currículum <span className="text-ec-on-surface-variant font-normal">(PDF)</span>
+            </Label>
 
-          {cvFile ? (
-            <div className="group relative flex flex-1 min-h-80 flex-col items-center justify-center gap-4 rounded-2xl border border-ec-outline-variant/10 bg-ec-surface-container-lowest px-5 py-6 animate-fade-in">
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-ec-primary-container">
-                <FileText className="size-6 text-ec-on-primary-container" />
+            {cvFile ? (
+              <div className="group relative flex flex-col items-center justify-center gap-4 rounded-2xl border border-ec-outline-variant/10 bg-ec-surface-container-lowest px-5 py-8 animate-fade-in shadow-sm">
+                <div className="flex size-14 items-center justify-center rounded-2xl bg-ec-primary-container">
+                  <FileText className="size-6 text-ec-on-primary-container" />
+                </div>
+                <div className="min-w-0 text-center">
+                  <p className="wrap-break-word text-sm font-medium text-ec-on-surface">
+                    {cvFile.name}
+                  </p>
+                  <p className="mt-1 text-xs text-ec-on-surface-variant">
+                    {(cvFile.size / 1024).toFixed(0)} KB · PDF
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCvFile(null)}
+                  className="mt-2 flex items-center gap-2 rounded-lg border border-ec-outline-variant/15 px-3 py-1.5 text-xs text-ec-on-surface-variant transition-colors hover:bg-ec-surface-container-high hover:text-ec-on-surface"
+                >
+                  <X className="size-3" />
+                  Cambiar archivo
+                </button>
               </div>
-              <div className="min-w-0 text-center">
-                <p className="wrap-break-word text-sm font-medium text-ec-on-surface">
-                  {cvFile.name}
-                </p>
-                <p className="mt-1 text-xs text-ec-on-surface-variant">
-                  {(cvFile.size / 1024).toFixed(0)} KB · PDF
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCvFile(null)}
-                className="flex size-8 shrink-0 items-center justify-center rounded-full border border-ec-outline-variant/15 text-ec-on-surface-variant transition-colors hover:bg-ec-surface-container-high hover:text-ec-on-surface"
-                aria-label="Quitar archivo"
+            ) : (
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Zona de carga de CV"
+                onDrop={handleDrop}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                onDragLeave={() => setIsDragging(false)}
+                onClick={() => inputRef.current?.click()}
+                onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+                className={cn(
+                  "flex min-h-[320px] cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl px-6 py-10 text-center transition-all",
+                  "bg-ec-surface-container-lowest",
+                  "shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]",
+                  isDragging
+                    ? "shadow-[0_0_0_2px_oklch(0.445_0.055_260/0.5)] bg-ec-primary-container/30"
+                    : "hover:shadow-[0_0_0_1.5px_oklch(0.445_0.055_260/0.3)] hover:bg-ec-surface-container-low",
+                )}
               >
-                <X className="size-4" />
-              </button>
+                <div className={cn(
+                  "flex size-12 items-center justify-center rounded-full transition-colors",
+                  isDragging ? "bg-ec-primary-container" : "bg-ec-surface-container-high",
+                )}>
+                  <Upload className={cn("size-5 transition-colors", isDragging ? "text-ec-on-primary-container" : "text-ec-on-surface-variant")} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-ec-on-surface leading-tight">
+                    {isDragging ? "Suelta aquí" : "Arrastra tu CV o haz clic"}
+                  </p>
+                  <p className="mt-1 text-[11px] text-ec-on-surface-variant">Solo archivos PDF</p>
+                </div>
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept="application/pdf"
+                  className="sr-only"
+                  onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
+                  aria-label="Seleccionar archivo PDF"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Job position field */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-4">
+              <Label htmlFor="job-position" className="text-sm font-semibold text-ec-on-surface">
+                Puesto al que postulas
+              </Label>
+              <div className="flex items-center gap-3">
+                {!canStart && (
+                  <p className="hidden text-[10px] text-ec-on-surface-variant sm:block">
+                    {!cvFile ? "Sube tu CV" : "Describe el puesto"}
+                  </p>
+                )}
+                <Button
+                  size="sm"
+                  disabled={!canStart || isLoading}
+                  onClick={() => canStart && onStart(cvFile!, jobPosition.trim())}
+                  className="gap-2 rounded-lg px-6 text-xs font-semibold shadow-md shadow-ec-primary/20 transition-all hover:-translate-y-0.5"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="size-3 animate-spin" />
+                      Preparando sesión…
+                    </>
+                  ) : (
+                    <>
+                      Iniciar entrevista
+                      <ArrowRight className="size-3" />
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
-          ) : (
-            <div
-              role="button"
-              tabIndex={0}
-              aria-label="Zona de carga de CV"
-              onDrop={handleDrop}
-              onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
-              onDragLeave={() => setIsDragging(false)}
-              onClick={() => inputRef.current?.click()}
-              onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
-              className={cn(
-                "flex flex-1 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl px-8 py-12 text-center transition-all",
-                "bg-ec-surface-container-lowest",
-                "shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]",
-                isDragging
-                  ? "shadow-[0_0_0_2px_oklch(0.445_0.055_260/0.5)] bg-ec-primary-container/30"
-                  : "hover:shadow-[0_0_0_1.5px_oklch(0.445_0.055_260/0.3)] hover:bg-ec-surface-container-low",
-              )}
-            >
-              <div className={cn(
-                "flex size-12 items-center justify-center rounded-full transition-colors",
-                isDragging ? "bg-ec-primary-container" : "bg-ec-surface-container-high",
-              )}>
-                <Upload className={cn("size-5 transition-colors", isDragging ? "text-ec-on-primary-container" : "text-ec-on-surface-variant")} />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-ec-on-surface">
-                  {isDragging ? "Suelta el archivo aquí" : "Arrastra tu CV o haz clic"}
-                </p>
-                <p className="mt-0.5 text-xs text-ec-on-surface-variant">Solo archivos PDF</p>
-              </div>
-              <input
-                ref={inputRef}
-                type="file"
-                accept="application/pdf"
-                className="sr-only"
-                onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
-                aria-label="Seleccionar archivo PDF"
+            <div className="relative">
+              <Briefcase className="pointer-events-none absolute left-4 top-4 size-4 text-ec-on-surface-variant" />
+              <Textarea
+                id="job-position"
+                value={jobPosition}
+                onChange={(e) => setJobPosition(e.target.value)}
+                placeholder="Ej: Desarrollador Frontend Senior en empresa fintech, trabajo remoto. Pega aquí la descripción del puesto si la tienes."
+                className={cn(
+                  "min-h-[400px] lg:min-h-[500px] max-h-[70vh] resize-none overflow-y-auto rounded-2xl pl-11 pt-3.5 text-sm leading-relaxed",
+                  "bg-ec-surface-container-lowest focus:bg-ec-surface-container-lowest",
+                  "shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]",
+                  "border-transparent focus-visible:border-ec-primary/40 focus-visible:ring-0",
+                  "focus-visible:shadow-[0_0_0_1.5px_oklch(0.445_0.055_260/0.4)]",
+                  "placeholder:text-ec-on-surface-variant/40 transition-all",
+                )}
               />
             </div>
-          )}
-        </div>
-
-        {/* Job position field */}
-        <div className="flex h-full min-h-80 flex-col gap-3">
-          <Label htmlFor="job-position" className="text-sm font-semibold text-ec-on-surface">
-            Puesto al que postulas
-          </Label>
-          <div className="relative flex-1">
-            <Briefcase className="pointer-events-none absolute left-4 top-4 size-4 text-ec-on-surface-variant" />
-            <Textarea
-              id="job-position"
-              value={jobPosition}
-              onChange={(e) => setJobPosition(e.target.value)}
-              placeholder="Ej: Desarrollador Frontend Senior en empresa fintech, trabajo remoto"
-              className={cn(
-                "h-full min-h-80 resize-none overflow-y-auto rounded-2xl pl-11 pt-3.5 text-sm",
-                "bg-ec-surface-container-lowest focus:bg-ec-surface-container-lowest",
-                "shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]",
-                "border-transparent focus-visible:border-ec-primary/40 focus-visible:ring-0",
-                "focus-visible:shadow-[0_0_0_1.5px_oklch(0.445_0.055_260/0.4)]",
-                "placeholder:text-ec-on-surface-variant/50 transition-all",
-              )}
-            />
           </div>
         </div>
       </div>
-      </div>
 
-      {/* CTA */}
-      <div className="flex items-center gap-4">
-        <Button
-          size="lg"
-          disabled={!canStart || isLoading}
-          onClick={() => canStart && onStart(cvFile!, jobPosition.trim())}
-          className="gap-2 rounded-xl px-8 text-sm font-semibold shadow-lg shadow-ec-primary/20 transition-all hover:-translate-y-0.5 disabled:shadow-none"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Preparando entrevista…
-            </>
-          ) : (
-            <>
-              Iniciar entrevista
-              <ArrowRight className="size-4" />
-            </>
-          )}
-        </Button>
-        {!canStart && (
-          <p className="text-xs text-ec-on-surface-variant">
-            {!cvFile ? "Sube tu CV para continuar" : "Escribe el puesto para continuar"}
-          </p>
-        )}
-      </div>
 
       {error && (
         <p className="text-sm text-destructive" role="alert">
