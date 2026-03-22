@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -11,8 +12,16 @@ import {
 } from "@/components/settings"
 import { useAuth } from "@/hooks/useAuth"
 
+import {
+  updateUserName,
+  updatePreferences,
+  uploadCvFile,
+  deleteCvFile,
+  getCvDownloadUrl,
+} from "@/services/settings.service"
+
 export default function SettingsPage() {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
 
   const [profile, setProfile] = useState({
     name: "",
@@ -21,20 +30,6 @@ export default function SettingsPage() {
     avatarUrl: "",
   })
 
-  // Sync profile state with Appwrite user session
-  useEffect(() => {
-    if (user) {
-      setProfile((prev) => ({
-        ...prev,
-        name: user.name || "",
-        email: user.email || "",
-        // Appwrite prefs can store custom fields like title
-        title: (user.prefs as Record<string, string>)?.title || "",
-        avatarUrl: (user.prefs as Record<string, string>)?.avatarUrl || "",
-      }))
-    }
-  }, [user])
-
   const [cvList, setCvList] = useState<CvDocument[]>([])
 
   const [notifications, setNotifications] = useState({
@@ -42,44 +37,142 @@ export default function SettingsPage() {
     pushNotifications: false,
   })
 
-  const [twoFactorEnabled] = useState(() => user?.mfa ?? false)
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+
+  // Sync state with Appwrite session
+  useEffect(() => {
+    if (user) {
+      const prefs = user.prefs as Record<string, any>
+      setProfile({
+        name: user.name || "",
+        email: user.email || "",
+        title: prefs?.title || "",
+        avatarUrl: prefs?.avatarUrl || "",
+      })
+
+      try {
+        if (prefs?.cvList) {
+          setCvList(JSON.parse(prefs.cvList))
+        }
+      } catch (e) {
+        setCvList([])
+      }
+
+      setNotifications({
+        emailAlerts: prefs?.emailAlerts ?? true,
+        pushNotifications: prefs?.pushNotifications ?? false,
+      })
+
+      setTwoFactorEnabled(user.mfa ?? false)
+      setIsDirty(false)
+    }
+  }, [user])
 
   function handleProfileChange(updated: typeof profile) {
     setProfile(updated)
     setIsDirty(true)
   }
 
-  function handleUploadCv(file: File) {
-    const newCv: CvDocument = {
-      id: crypto.randomUUID(),
-      name: file.name,
-      uploadedAt: `Subido el ${new Date().toLocaleDateString("es-ES", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })}`,
-      isPrimary: cvList.length === 0,
+  async function handleUploadCv(file: File) {
+    setIsUploading(true)
+    try {
+      const uploadedFile = await uploadCvFile(file)
+      
+      const newCv: CvDocument = {
+        id: uploadedFile.$id,
+        name: file.name,
+        uploadedAt: `Subido el ${new Date().toLocaleDateString("es-ES", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })}`,
+        isPrimary: cvList.length === 0,
+      }
+      
+      const nextList = [...cvList, newCv]
+      setCvList(nextList)
+      
+      // Persist list to preferences immediately since the file is uploaded
+      await updatePreferences({
+        ...(user?.prefs || {}),
+        cvList: JSON.stringify(nextList),
+      })
+      
+      await refreshUser()
+    } catch (error) {
+      console.error("Failed to upload CV", error)
+    } finally {
+      setIsUploading(false)
     }
-    setCvList((prev) => [...prev, newCv])
-    setIsDirty(true)
   }
 
-  function handleDeleteCv(id: string) {
-    setCvList((prev) => prev.filter((cv) => cv.id !== id))
-    setIsDirty(true)
+  async function handleDeleteCv(id: string) {
+    try {
+      // Optimistic delete
+      const nextList = cvList.filter((cv) => cv.id !== id)
+      
+      // Si el CV eliminado era el primary y quedan mas, marcamos el primero
+      if (cvList.find(cv => cv.id === id)?.isPrimary && nextList.length > 0) {
+          nextList[0].isPrimary = true
+      }
+      
+      setCvList(nextList)
+      await deleteCvFile(id)
+      await updatePreferences({
+        ...(user?.prefs || {}),
+        cvList: JSON.stringify(nextList),
+      })
+      await refreshUser()
+    } catch (error) {
+      console.error("Failed to delete CV", error)
+    }
   }
 
-  function handleSetPrimaryCv(id: string) {
-    setCvList((prev) =>
-      prev.map((cv) => ({ ...cv, isPrimary: cv.id === id }))
-    )
-    setIsDirty(true)
+  async function handleSetPrimaryCv(id: string) {
+    const nextList = cvList.map((cv) => ({ ...cv, isPrimary: cv.id === id }))
+    setCvList(nextList)
+    try {
+      await updatePreferences({
+        ...(user?.prefs || {}),
+        cvList: JSON.stringify(nextList),
+      })
+      await refreshUser()
+    } catch (error) {
+      console.error("Failed to set primary CV", error)
+    }
   }
 
-  function handleDownloadCv(id: string) {
-    // placeholder — would trigger real download
-    console.log("Download CV:", id)
+  async function handleDownloadCv(id: string, name: string) {
+    try {
+      const url = getCvDownloadUrl(id)
+      
+      const fallback = typeof window !== "undefined" ? window.localStorage.getItem("cookieFallback") : null
+      const headers: Record<string, string> = {}
+      if (fallback) headers["X-Fallback-Cookies"] = fallback
+        
+      const response = await fetch(url.toString(), { headers })
+      
+      if (!response.ok) throw new Error("Failed to fetch file")
+        
+      const blob = await response.blob()
+      const objectUrl = window.URL.createObjectURL(blob)
+      
+      const link = document.createElement("a")
+      link.href = objectUrl
+      link.download = name || "cv-espejo.pdf"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Cleanup the object URL
+      setTimeout(() => window.URL.revokeObjectURL(objectUrl), 100)
+    } catch (error) {
+      console.error("Download fallback to new tab:", error)
+      window.open(getCvDownloadUrl(id), "_blank")
+    }
   }
 
   function handleNotificationsChange(
@@ -89,19 +182,43 @@ export default function SettingsPage() {
     setIsDirty(true)
   }
 
-  function handleSave() {
-    // placeholder — would persist to backend via Appwrite
-    setIsDirty(false)
+  async function handleSave() {
+    setIsSaving(true)
+    try {
+      if (user?.name !== profile.name) {
+        await updateUserName(profile.name)
+      }
+
+      await updatePreferences({
+         ...(user?.prefs || {}),
+         title: profile.title,
+         avatarUrl: profile.avatarUrl,
+         emailAlerts: notifications.emailAlerts,
+         pushNotifications: notifications.pushNotifications
+      })
+
+      // Disable dirty state and refresh session
+      setIsDirty(false)
+      await refreshUser()
+    } catch (error) {
+      console.error("Failed to update profile", error)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   function handleDiscard() {
-    // Reset profile to the session values
     if (user) {
+      const prefs = user.prefs as Record<string, any>
       setProfile({
         name: user.name || "",
         email: user.email || "",
-        title: (user.prefs as Record<string, string>)?.title || "",
-        avatarUrl: (user.prefs as Record<string, string>)?.avatarUrl || "",
+        title: prefs?.title || "",
+        avatarUrl: prefs?.avatarUrl || "",
+      })
+      setNotifications({
+        emailAlerts: prefs?.emailAlerts ?? true,
+        pushNotifications: prefs?.pushNotifications ?? false,
       })
     }
     setIsDirty(false)
@@ -139,8 +256,8 @@ export default function SettingsPage() {
           notifications={notifications}
           onNotificationsChange={handleNotificationsChange}
           twoFactorEnabled={twoFactorEnabled}
-          onChangePassword={() => console.log("Change password")}
-          onToggle2FA={() => console.log("Toggle 2FA")}
+          onChangePassword={() => console.log("Change password not implemented")}
+          onToggle2FA={() => console.log("Toggle 2FA not implemented")}
         />
       </div>
 
@@ -150,7 +267,7 @@ export default function SettingsPage() {
           type="button"
           variant="ghost"
           onClick={handleDiscard}
-          disabled={!isDirty}
+          disabled={!isDirty || isSaving || isUploading}
           className="rounded-xl px-8 text-sm font-semibold text-ec-on-surface-variant"
         >
           Descartar Cambios
@@ -158,9 +275,10 @@ export default function SettingsPage() {
         <Button
           type="button"
           onClick={handleSave}
-          disabled={!isDirty}
-          className="rounded-xl px-10 text-sm font-bold"
+          disabled={!isDirty || isSaving || isUploading}
+          className="rounded-xl px-10 text-sm font-bold gap-2"
         >
+          {isSaving && <Loader2 className="size-4 animate-spin" />}
           Guardar Configuración
         </Button>
       </footer>

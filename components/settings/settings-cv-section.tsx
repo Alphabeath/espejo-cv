@@ -19,7 +19,7 @@ interface SettingsCvSectionProps {
   onUpload: (file: File) => void
   onDelete: (id: string) => void
   onSetPrimary: (id: string) => void
-  onDownload: (id: string) => void
+  onDownload: (id: string, name: string) => void
 }
 
 export function SettingsCvSection({
@@ -131,7 +131,7 @@ export function SettingsCvSection({
                   )}
                   <button
                     type="button"
-                    onClick={() => onDownload(cv.id)}
+                    onClick={() => onDownload(cv.id, cv.name)}
                     className="flex items-center gap-1 text-xs font-bold text-ec-primary hover:underline"
                   >
                     <Download className="size-3" />
