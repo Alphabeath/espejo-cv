@@ -1,12 +1,14 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { FileText, Upload, X, Briefcase, ArrowRight, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/hooks/useAuth"
+import { getCvDownloadUrl } from "@/services/settings.service"
 
 interface PracticeUploadStepProps {
   onStart: (cvFile: File, jobPosition: string) => void
@@ -19,12 +21,68 @@ export function PracticeUploadStep({
   isLoading = false,
   error = null,
 }: PracticeUploadStepProps) {
+  const { user } = useAuth()
   const [cvFile, setCvFile] = useState<File | null>(null)
   const [jobPosition, setJobPosition] = useState("")
   const [isDragging, setIsDragging] = useState(false)
+  const [isPreloading, setIsPreloading] = useState(true)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const canStart = cvFile !== null && jobPosition.trim().length > 0
+  const canStart = cvFile !== null && jobPosition.trim().length > 0 && !isPreloading
+
+  useEffect(() => {
+    let mounted = true
+
+    async function preloadPrimaryContext() {
+      if (!user) {
+        setIsPreloading(false)
+        return
+      }
+
+      let cvList: any[] = []
+      try {
+        // @ts-expect-error Appwrite Preferences type does not infer custom keys
+        cvList = JSON.parse(user.prefs?.cvList || "[]")
+      } catch {}
+
+      const primary = cvList.find((c: any) => c.isPrimary) || (cvList.length === 1 ? cvList[0] : null)
+
+      if (primary) {
+        try {
+          const url = getCvDownloadUrl(primary.id)
+          
+          // Appwrite relies on X-Fallback-Cookies when 3rd party cookies are blocked
+          const fallback = typeof window !== "undefined" ? window.localStorage.getItem("cookieFallback") : null
+          const headers: Record<string, string> = {}
+          if (fallback) {
+            headers["X-Fallback-Cookies"] = fallback
+          }
+
+          const res = await fetch(url.toString(), {
+            headers,
+          })
+
+          if (res.ok && mounted) {
+            const blob = await res.blob()
+            const file = new File([blob], primary.name, { type: "application/pdf" })
+            setCvFile(file)
+          } else if (!res.ok) {
+            console.error("Failed to preload primary CV, status:", res.status)
+          }
+        } catch (err) {
+          console.error("Network error while preloading primary CV", err)
+        }
+      }
+      
+      if (mounted) setIsPreloading(false)
+    }
+
+    preloadPrimaryContext()
+
+    return () => {
+      mounted = false
+    }
+  }, [user])
 
   function handleFileChange(file: File | null) {
     if (!file) return
@@ -50,7 +108,9 @@ export function PracticeUploadStep({
           Prepara tu sesión
         </h1>
         <p className="text-sm text-ec-on-surface-variant leading-relaxed max-w-sm">
-          Sube tu CV en PDF e indica el puesto al que postulas. La IA personalizará la entrevista en base a tu perfil.
+          Sube tu CV en PDF e indica el puesto al que postulas. La IA personalizará la entrevista en base a tu perfil. 
+          {/* @ts-expect-error Appwrite Preferences type does not infer custom keys */}
+          {user?.prefs?.cvList && " Tu CV principal ha sido precargado."}
         </p>
       </div>
 
