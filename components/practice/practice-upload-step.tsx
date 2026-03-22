@@ -122,13 +122,8 @@ export function PracticeUploadStep({
               Tu currículum <span className="text-ec-on-surface-variant font-normal">(PDF)</span>
             </Label>
 
-            {isPreloading ? (
-              <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-ec-outline-variant/10 bg-ec-surface-container-lowest animate-pulse">
-                <Loader2 className="size-8 animate-spin text-ec-primary" />
-                <p className="mt-4 text-sm tracking-wide text-ec-on-surface-variant">Cargando tu CV principal...</p>
-              </div>
-            ) : cvFile ? (
-              <div className="group relative flex flex-col items-center justify-center gap-4 rounded-2xl border border-ec-outline-variant/10 bg-ec-surface-container-lowest px-5 py-8 animate-fade-in shadow-sm">
+            {cvFile ? (
+              <div className="group relative flex min-h-80 flex-col items-center justify-center gap-4 rounded-2xl border border-ec-outline-variant/10 bg-ec-surface-container-lowest px-5 py-8 animate-fade-in shadow-sm">
                 <div className="flex size-14 items-center justify-center rounded-2xl bg-ec-primary-container">
                   <FileText className="size-6 text-ec-on-primary-container" />
                 </div>
@@ -143,7 +138,7 @@ export function PracticeUploadStep({
                 <button
                   type="button"
                   onClick={() => setCvFile(null)}
-                  className="mt-2 flex items-center gap-2 rounded-lg border border-ec-outline-variant/15 px-3 py-1.5 text-xs text-ec-on-surface-variant transition-colors hover:bg-ec-surface-container-high hover:text-ec-on-surface"
+                  className="mt-2 inline-flex h-10 items-center gap-2 rounded-lg border border-ec-outline-variant/15 px-4 text-xs font-semibold text-ec-on-surface-variant transition-colors hover:bg-ec-surface-container-high hover:text-ec-on-surface"
                 >
                   <X className="size-3" />
                   Cambiar archivo
@@ -160,7 +155,7 @@ export function PracticeUploadStep({
                 onClick={() => inputRef.current?.click()}
                 onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
                 className={cn(
-                  "flex min-h-[320px] cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl px-6 py-10 text-center transition-all",
+                  "flex min-h-80 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl px-6 py-10 text-center transition-all",
                   "bg-ec-surface-container-lowest",
                   "shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]",
                   isDragging
@@ -198,31 +193,6 @@ export function PracticeUploadStep({
               <Label htmlFor="job-position" className="text-sm font-semibold text-ec-on-surface">
                 Puesto al que postulas
               </Label>
-              <div className="flex items-center gap-3">
-                {!canStart && (
-                  <p className="hidden text-[10px] text-ec-on-surface-variant sm:block">
-                    {!cvFile ? "Sube tu CV" : "Describe el puesto"}
-                  </p>
-                )}
-                <Button
-                  size="sm"
-                  disabled={!canStart || isLoading}
-                  onClick={() => canStart && onStart(cvFile!, jobPosition.trim())}
-                  className="gap-2 rounded-lg px-6 text-xs font-semibold shadow-md shadow-ec-primary/20 transition-all hover:-translate-y-0.5"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="size-3 animate-spin" />
-                      Preparando sesión…
-                    </>
-                  ) : (
-                    <>
-                      Iniciar entrevista
-                      <ArrowRight className="size-3" />
-                    </>
-                  )}
-                </Button>
-              </div>
             </div>
             <div className="relative">
               <Briefcase className="pointer-events-none absolute left-4 top-4 size-4 text-ec-on-surface-variant" />
@@ -232,7 +202,7 @@ export function PracticeUploadStep({
                 onChange={(e) => setJobPosition(e.target.value)}
                 placeholder="Ej: Desarrollador Frontend Senior en empresa fintech, trabajo remoto. Pega aquí la descripción del puesto si la tienes."
                 className={cn(
-                  "min-h-[400px] lg:min-h-[500px] max-h-[70vh] resize-none overflow-y-auto rounded-2xl pl-11 pt-3.5 text-sm leading-relaxed",
+                  "h-80 resize-none overflow-y-auto rounded-2xl pl-11 pt-3.5 text-sm leading-relaxed",
                   "bg-ec-surface-container-lowest focus:bg-ec-surface-container-lowest",
                   "shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]",
                   "border-transparent focus-visible:border-ec-primary/40 focus-visible:ring-0",
@@ -243,6 +213,32 @@ export function PracticeUploadStep({
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {!canStart && (
+          <p className="text-[11px] text-ec-on-surface-variant">
+            {!cvFile ? "Sube tu CV para continuar." : "Describe el puesto para continuar."}
+          </p>
+        )}
+        <Button
+          size="lg"
+          disabled={!canStart || isLoading}
+          onClick={() => canStart && onStart(cvFile!, jobPosition.trim())}
+          className="h-10 w-full max-w-xs gap-2 rounded-lg px-6 text-sm font-semibold shadow-md shadow-ec-primary/20 transition-all hover:-translate-y-0.5"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              Preparando sesión…
+            </>
+          ) : (
+            <>
+              Iniciar entrevista
+              <ArrowRight className="size-4" />
+            </>
+          )}
+        </Button>
       </div>
 
 
