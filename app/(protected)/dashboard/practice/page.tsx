@@ -51,7 +51,6 @@ const MOCK_RESULT: PracticeResult = {
 export default function PracticePage() {
   const router = useRouter()
   const {
-    interviewPlan,
     questions,
     isAnalyzing,
     isTranscribing,
@@ -64,7 +63,7 @@ export default function PracticePage() {
   const [step, setStep] = useState<Step>("upload")
 
   // Interview step state
-  const [jobPosition, setJobPosition] = useState("")
+  const [displayJobTitle, setDisplayJobTitle] = useState("")
   const [isAiTyping, setIsAiTyping] = useState(false)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [isInterviewComplete, setIsInterviewComplete] = useState(false)
@@ -79,7 +78,7 @@ export default function PracticePage() {
   const handleStart = useCallback(async (cvFile: File, position: string) => {
     const plan = await createInterviewPlan(cvFile, position)
 
-    setJobPosition(position)
+    setDisplayJobTitle(plan.roleSummary)
     setCurrentQuestionIndex(0)
     setIsInterviewComplete(false)
 
@@ -90,7 +89,8 @@ export default function PracticePage() {
 
   /** Step 2: user sends an answer */
   const handleSendAnswer = useCallback(
-    async (_answer: string) => {
+    async (answer: string) => {
+      void answer
       setIsAiTyping(true)
 
       await new Promise((r) => setTimeout(r, 1400 + Math.random() * 800))
@@ -112,17 +112,17 @@ export default function PracticePage() {
   const handleFinish = useCallback(async () => {
     setIsFinishing(true)
     await new Promise((r) => setTimeout(r, 1800))
-    setResult({ ...MOCK_RESULT, jobPosition, totalQuestions: questions.length })
+    setResult({ ...MOCK_RESULT, jobPosition: displayJobTitle, totalQuestions: questions.length })
     setIsFinishing(false)
     setStep("results")
-  }, [jobPosition, questions.length])
+  }, [displayJobTitle, questions.length])
 
   /** Step 3 → 1: start over */
   const handleNewPractice = useCallback(() => {
     setStep("upload")
     setCurrentQuestionIndex(0)
     setIsInterviewComplete(false)
-    setJobPosition("")
+    setDisplayJobTitle("")
     setResult(null)
     resetAI()
   }, [resetAI])
@@ -168,7 +168,7 @@ export default function PracticePage() {
 
       {step === "interview" && (
         <PracticeInterviewStep
-          jobPosition={interviewPlan?.roleSummary ?? jobPosition}
+          jobPosition={displayJobTitle}
           currentQuestion={questions[currentQuestionIndex]?.text ?? ""}
           isAiTyping={isAiTyping}
           isTranscribing={isTranscribing}

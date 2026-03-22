@@ -10,10 +10,11 @@ import type { AudioTranscription, InterviewPlan } from "@/lib/ai-types"
 
 const MAX_CV_TEXT_LENGTH = 14_000
 const INTERVIEW_QUESTION_COUNT = 5
+const MAX_ROLE_SUMMARY_LENGTH = 80
 
 const interviewPlanSchema = z.object({
 	cvSummary: z.string().min(1).max(600),
-	roleSummary: z.string().min(1).max(300),
+	roleSummary: z.string().min(1).max(MAX_ROLE_SUMMARY_LENGTH),
 	focusAreas: z.array(z.string().min(1).max(120)).min(3).max(6),
 	questions: z
 		.array(
@@ -144,10 +145,12 @@ export async function generateInterviewPlan({
 		schema: interviewPlanSchema,
 		schemaName: "interview_plan",
 		schemaDescription:
-			"Plan de entrevista basado en CV y descripción del puesto, con preguntas concretas en español.",
+			"Plan de entrevista basado en CV y descripción del puesto, con un título corto del rol y preguntas concretas en español.",
 		prompt: [
-			"Actúa como reclutador técnico senior.",
+			"Actúa como reclutador con experiencia y de ser necesario técnico.",
 			"Analiza el CV y el puesto. Genera un plan breve de entrevista en español.",
+			`En roleSummary devuelve solo un título breve y limpio del puesto, apto para UI, de máximo ${MAX_ROLE_SUMMARY_LENGTH} caracteres.` ,
+			"roleSummary no debe incluir empresa, modalidad, ubicación, seniority redundante, stack excesivo ni detalles largos de la vacante salvo que sean esenciales para identificar el rol.",
 			`Devuelve exactamente ${INTERVIEW_QUESTION_COUNT} preguntas personalizadas, claras y sin respuesta sugerida.`,
 			`No devuelvas una sexta pregunta ni variantes extra. El máximo permitido es ${INTERVIEW_QUESTION_COUNT}.`,
 			"Las preguntas deben mezclar experiencia, ajuste al rol, logros y capacidad de resolución.",
