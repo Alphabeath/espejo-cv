@@ -30,7 +30,7 @@ export function SettingsProfileSection({
   return (
     <section id="perfil" className="animate-fade-in-up">
       <h3 className="font-headline text-2xl font-bold text-ec-primary mb-10 tracking-tight">
-        Gestión de Perfil
+        Gestión de perfil
       </h3>
 
       <div className="rounded-2xl bg-ec-surface-container-low p-8 md:p-10">

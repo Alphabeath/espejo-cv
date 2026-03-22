@@ -55,7 +55,7 @@ export function SettingsCvSection({
           className="gap-2 rounded-xl px-6 text-sm font-semibold"
         >
           <Upload className="size-4" />
-          Subir Nuevo CV
+          Subir nuevo CV
         </Button>
         <input
           ref={inputRef}

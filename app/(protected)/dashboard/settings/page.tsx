@@ -32,10 +32,7 @@ export default function SettingsPage() {
 
   const [cvList, setCvList] = useState<CvDocument[]>([])
 
-  const [notifications, setNotifications] = useState({
-    emailAlerts: true,
-    pushNotifications: false,
-  })
+
 
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
@@ -61,10 +58,6 @@ export default function SettingsPage() {
         setCvList([])
       }
 
-      setNotifications({
-        emailAlerts: prefs?.emailAlerts ?? true,
-        pushNotifications: prefs?.pushNotifications ?? false,
-      })
 
       setTwoFactorEnabled(user.mfa ?? false)
       setIsDirty(false)
@@ -175,12 +168,6 @@ export default function SettingsPage() {
     }
   }
 
-  function handleNotificationsChange(
-    prefs: typeof notifications
-  ) {
-    setNotifications(prefs)
-    setIsDirty(true)
-  }
 
   async function handleSave() {
     setIsSaving(true)
@@ -193,8 +180,6 @@ export default function SettingsPage() {
          ...(user?.prefs || {}),
          title: profile.title,
          avatarUrl: profile.avatarUrl,
-         emailAlerts: notifications.emailAlerts,
-         pushNotifications: notifications.pushNotifications
       })
 
       // Disable dirty state and refresh session
@@ -215,10 +200,6 @@ export default function SettingsPage() {
         email: user.email || "",
         title: prefs?.title || "",
         avatarUrl: prefs?.avatarUrl || "",
-      })
-      setNotifications({
-        emailAlerts: prefs?.emailAlerts ?? true,
-        pushNotifications: prefs?.pushNotifications ?? false,
       })
     }
     setIsDirty(false)
@@ -253,8 +234,6 @@ export default function SettingsPage() {
         />
 
         <SettingsPreferencesSection
-          notifications={notifications}
-          onNotificationsChange={handleNotificationsChange}
           twoFactorEnabled={twoFactorEnabled}
           onChangePassword={() => console.log("Change password not implemented")}
           onToggle2FA={() => console.log("Toggle 2FA not implemented")}
