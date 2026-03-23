@@ -23,8 +23,7 @@ interface PracticeInterviewStepProps {
   isAiTyping: boolean
   isTranscribing?: boolean
   isInterviewComplete?: boolean
-  questionIndex: number
-  totalQuestions: number
+  progress: number
   onSendAnswer: (answer: string) => void
   onTranscribeAudio: (audioBlob: Blob) => Promise<string>
   onFinish: () => void
@@ -38,8 +37,7 @@ export function PracticeInterviewStep({
   isAiTyping,
   isTranscribing = false,
   isInterviewComplete = false,
-  questionIndex,
-  totalQuestions,
+  progress,
   onSendAnswer,
   onTranscribeAudio,
   onFinish,
@@ -69,7 +67,6 @@ export function PracticeInterviewStep({
     }
   }
 
-  const progress = totalQuestions > 0 ? ((questionIndex) / totalQuestions) * 100 : 0
   const statusLabel = isInterviewComplete
     ? "Sesión completada"
     : isAiTyping
@@ -143,7 +140,7 @@ export function PracticeInterviewStep({
         <section className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
           <div className="flex flex-col items-center gap-4">
             <Badge className="rounded-full bg-ec-primary-container px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-ec-on-primary-container">
-              {isInterviewComplete ? "Resumen" : `Pregunta ${questionIndex}`}
+              {isInterviewComplete ? "Resumen" : `Interacción`}
             </Badge>
 
             <div className="quiet-surface w-full max-w-6xl rounded-[2rem] px-6 py-8 md:px-10 md:py-10 xl:max-w-7xl xl:px-12">

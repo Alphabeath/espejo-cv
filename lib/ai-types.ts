@@ -1,3 +1,5 @@
+export type InterviewType = "estructurada" | "no-estructurada" | "informal"
+
 export type InterviewQuestion = {
   id: string
   text: string
@@ -8,6 +10,7 @@ export type InterviewPlan = {
   roleSummary: string
   focusAreas: string[]
   questions: InterviewQuestion[]
+  interviewType?: InterviewType
 }
 
 export type AudioTranscriptionSegment = {
@@ -21,4 +24,10 @@ export type AudioTranscription = {
   durationInSeconds: number | null
   language: string | null
   segments: AudioTranscriptionSegment[]
+}
+
+export type ChatReply = {
+  reply: string
+  isFinished: boolean
+  progress: number
 }

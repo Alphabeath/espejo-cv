@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { motion } from "motion/react"
 import { FileText, Upload, X, Briefcase, ArrowRight, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -9,9 +10,10 @@ import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/useAuth"
 import { getCvDownloadUrl } from "@/services/settings.service"
+import type { InterviewType } from "@/lib/ai-types"
 
 interface PracticeUploadStepProps {
-  onStart: (cvFile: File, jobPosition: string) => void
+  onStart: (cvFile: File, jobPosition: string, interviewType: InterviewType) => void
   isLoading?: boolean
   error?: string | null
 }
@@ -24,6 +26,7 @@ export function PracticeUploadStep({
   const { user } = useAuth()
   const [cvFile, setCvFile] = useState<File | null>(null)
   const [jobPosition, setJobPosition] = useState("")
+  const [interviewType, setInterviewType] = useState<InterviewType>("estructurada")
   const [isDragging, setIsDragging] = useState(false)
   const [isPreloading, setIsPreloading] = useState(true)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -187,29 +190,69 @@ export function PracticeUploadStep({
             )}
           </div>
 
-          {/* Job position field */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-4">
-              <Label htmlFor="job-position" className="text-sm font-semibold text-ec-on-surface">
-                Puesto al que postulas
-              </Label>
+          {/* Fields column */}
+          <div className="flex flex-col gap-10">
+            {/* Job position field */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-4">
+                <Label htmlFor="job-position" className="text-sm font-semibold text-ec-on-surface">
+                  Puesto al que postulas
+                </Label>
+              </div>
+              <div className="relative">
+                <Briefcase className="pointer-events-none absolute left-4 top-4 size-4 text-ec-on-surface-variant" />
+                <Textarea
+                  id="job-position"
+                  value={jobPosition}
+                  onChange={(e) => setJobPosition(e.target.value)}
+                  placeholder="Ej: Desarrollador Frontend Senior en empresa fintech, trabajo remoto. Pega aquí la descripción del puesto si la tienes."
+                  className={cn(
+                    "h-48 resize-none overflow-y-auto rounded-2xl pl-11 pt-3.5 text-sm leading-relaxed",
+                    "bg-ec-surface-container-lowest focus:bg-ec-surface-container-lowest",
+                    "shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]",
+                    "border-transparent focus-visible:border-ec-primary/40 focus-visible:ring-0",
+                    "focus-visible:shadow-[0_0_0_1.5px_oklch(0.445_0.055_260/0.4)]",
+                    "placeholder:text-ec-on-surface-variant/40 transition-all",
+                  )}
+                />
+              </div>
             </div>
-            <div className="relative">
-              <Briefcase className="pointer-events-none absolute left-4 top-4 size-4 text-ec-on-surface-variant" />
-              <Textarea
-                id="job-position"
-                value={jobPosition}
-                onChange={(e) => setJobPosition(e.target.value)}
-                placeholder="Ej: Desarrollador Frontend Senior en empresa fintech, trabajo remoto. Pega aquí la descripción del puesto si la tienes."
-                className={cn(
-                  "h-80 resize-none overflow-y-auto rounded-2xl pl-11 pt-3.5 text-sm leading-relaxed",
-                  "bg-ec-surface-container-lowest focus:bg-ec-surface-container-lowest",
-                  "shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]",
-                  "border-transparent focus-visible:border-ec-primary/40 focus-visible:ring-0",
-                  "focus-visible:shadow-[0_0_0_1.5px_oklch(0.445_0.055_260/0.4)]",
-                  "placeholder:text-ec-on-surface-variant/40 transition-all",
-                )}
-              />
+
+            {/* Interview type field */}
+            <div className="flex flex-col gap-3">
+              <Label className="text-sm font-semibold text-ec-on-surface">
+                Tipo de entrevista
+              </Label>
+              <div className="relative flex w-full max-w-sm rounded-[1.25rem] bg-ec-surface-container-low p-1.5 shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]">
+                {(["estructurada", "no-estructurada", "informal"] as const).map((type) => {
+                  const isSelected = interviewType === type
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setInterviewType(type)}
+                      className={cn(
+                        "relative z-10 w-full flex-1 rounded-full py-2.5 text-xs font-semibold capitalize transition-colors duration-300",
+                        isSelected ? "text-ec-on-primary-container" : "text-ec-on-surface-variant hover:text-ec-on-surface"
+                      )}
+                    >
+                      {isSelected && (
+                        <motion.div
+                          layoutId="active-interview-type"
+                          className="absolute inset-0 z-[-1] rounded-full bg-ec-primary-container shadow-sm"
+                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        />
+                      )}
+                      {type.replace("-", " ")}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-xs text-ec-on-surface-variant leading-relaxed min-h-[2.5rem]">
+                {interviewType === "estructurada" && "Preguntas predefinidas y metódicas. Basadas en competencias y tu CV."}
+                {interviewType === "no-estructurada" && "Conversación abierta, profunda y exploratoria."}
+                {interviewType === "informal" && "Tono relajado enfocado en tu actitud y alineación cultural."}
+              </p>
             </div>
           </div>
         </div>
@@ -224,7 +267,7 @@ export function PracticeUploadStep({
         <Button
           size="lg"
           disabled={!canStart || isLoading}
-          onClick={() => canStart && onStart(cvFile!, jobPosition.trim())}
+          onClick={() => canStart && onStart(cvFile!, jobPosition.trim(), interviewType)}
           className="h-10 w-full max-w-xs gap-2 rounded-lg px-6 text-sm font-semibold shadow-md shadow-ec-primary/20 transition-all hover:-translate-y-0.5"
         >
           {isLoading ? (

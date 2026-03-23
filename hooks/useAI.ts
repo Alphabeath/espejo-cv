@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react"
 
-import type { AudioTranscription, InterviewPlan } from "@/lib/ai-types"
+import type { AudioTranscription, InterviewPlan, ChatReply } from "@/lib/ai-types"
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {
 	const payload = (await response.json().catch(() => null)) as
@@ -29,7 +29,7 @@ export function useAI() {
 	const [error, setError] = useState<string | null>(null)
 
 	const createInterviewPlan = useCallback(
-		async (cvFile: File, jobPosition: string) => {
+		async (cvFile: File, jobPosition: string, interviewType: string) => {
 			setError(null)
 			setIsAnalyzing(true)
 
@@ -37,6 +37,7 @@ export function useAI() {
 				const formData = new FormData()
 				formData.append("cvFile", cvFile)
 				formData.append("jobPosition", jobPosition)
+				formData.append("interviewType", interviewType)
 
 				const response = await fetch("/api/ai/analyze", {
 					method: "POST",
@@ -95,6 +96,38 @@ export function useAI() {
 		}
 	}, [])
 
+	const sendChatMessage = useCallback(
+		async (params: {
+			messages: { role: "user" | "assistant"; content: string }[]
+			cvSummary: string
+			jobPosition: string
+			interviewType: string
+			focusAreas: string[]
+			plannedQuestions: any[]
+		}) => {
+			setError(null)
+			try {
+				const response = await fetch("/api/ai/chat", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(params),
+				})
+
+				const reply = await parseJsonResponse<ChatReply>(response)
+				return reply
+			} catch (requestError) {
+				const message =
+					requestError instanceof Error
+						? requestError.message
+						: "No se pudo comunicar con el entrevistador.";
+
+				setError(message)
+				throw requestError
+			}
+		},
+		[],
+	)
+
 	const reset = useCallback(() => {
 		setInterviewPlan(null)
 		setIsAnalyzing(false)
@@ -114,6 +147,7 @@ export function useAI() {
 		error,
 		createInterviewPlan,
 		transcribeAudio,
+		sendChatMessage,
 		reset,
 		clearError,
 	}

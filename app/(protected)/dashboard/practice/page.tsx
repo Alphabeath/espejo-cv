@@ -10,6 +10,7 @@ import {
   PracticeResultsStep,
 } from "@/components/practice"
 import type { PracticeResult } from "@/components/practice"
+import type { InterviewType } from "@/lib/ai-types"
 
 // ─── Step machine ────────────────────────────────────────────────────────────
 type Step = "upload" | "interview" | "results"
@@ -51,12 +52,14 @@ const MOCK_RESULT: PracticeResult = {
 export default function PracticePage() {
   const router = useRouter()
   const {
+    interviewPlan,
     questions,
     isAnalyzing,
     isTranscribing,
     error: aiError,
     createInterviewPlan,
     transcribeAudio,
+    sendChatMessage,
     reset: resetAI,
   } = useAI()
 
@@ -65,7 +68,11 @@ export default function PracticePage() {
   // Interview step state
   const [displayJobTitle, setDisplayJobTitle] = useState("")
   const [isAiTyping, setIsAiTyping] = useState(false)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  
+  // Conversational state
+  const [messages, setMessages] = useState<{role: "user" | "assistant", content: string}[]>([])
+  const [progress, setProgress] = useState(0)
+
   const [isInterviewComplete, setIsInterviewComplete] = useState(false)
   const [isFinishing, setIsFinishing] = useState(false)
 
@@ -74,15 +81,16 @@ export default function PracticePage() {
 
   // ── Handlers ────────────────────────────────────────────────────────────
 
-  /** Step 1 → 2: user submits CV + job position */
-  const handleStart = useCallback(async (cvFile: File, position: string) => {
-    const plan = await createInterviewPlan(cvFile, position)
+  /** Step 1 → 2: user submits CV + job position + interview type */
+  const handleStart = useCallback(async (cvFile: File, position: string, type: InterviewType) => {
+    const plan = await createInterviewPlan(cvFile, position, type)
 
     setDisplayJobTitle(plan.roleSummary)
-    setCurrentQuestionIndex(0)
+    setProgress(0)
     setIsInterviewComplete(false)
 
     if (plan.questions.length > 0) {
+      setMessages([{ role: "assistant", content: plan.questions[0].text }])
       setStep("interview")
     }
   }, [createInterviewPlan])
@@ -90,22 +98,35 @@ export default function PracticePage() {
   /** Step 2: user sends an answer */
   const handleSendAnswer = useCallback(
     async (answer: string) => {
-      void answer
       setIsAiTyping(true)
 
-      await new Promise((r) => setTimeout(r, 1400 + Math.random() * 800))
+      const newHistory = [...messages, { role: "user" as const, content: answer }]
+      setMessages(newHistory)
 
-      const isLastQuestion = currentQuestionIndex >= questions.length - 1
+      try {
+        if (!interviewPlan) return;
 
-      if (isLastQuestion) {
-        setIsInterviewComplete(true)
-      } else {
-        setCurrentQuestionIndex((index) => index + 1)
+        const aiResponse = await sendChatMessage({
+          messages: newHistory,
+          cvSummary: interviewPlan.cvSummary,
+          jobPosition: displayJobTitle,
+          interviewType: interviewPlan.interviewType || "estructurada",
+          focusAreas: interviewPlan.focusAreas,
+          plannedQuestions: interviewPlan.questions
+        });
+
+        setMessages([...newHistory, { role: "assistant" as const, content: aiResponse.reply }]);
+        setProgress(aiResponse.progress);
+
+        if (aiResponse.isFinished) {
+          setIsInterviewComplete(true);
+        }
+      } catch(e) {
+      } finally {
+        setIsAiTyping(false);
       }
-
-      setIsAiTyping(false)
     },
-    [currentQuestionIndex, questions.length],
+    [messages, interviewPlan, displayJobTitle, sendChatMessage],
   )
 
   /** Step 2 → 3: user finishes interview */
@@ -120,7 +141,8 @@ export default function PracticePage() {
   /** Step 3 → 1: start over */
   const handleNewPractice = useCallback(() => {
     setStep("upload")
-    setCurrentQuestionIndex(0)
+    setMessages([])
+    setProgress(0)
     setIsInterviewComplete(false)
     setDisplayJobTitle("")
     setResult(null)
@@ -169,12 +191,11 @@ export default function PracticePage() {
       {step === "interview" && (
         <PracticeInterviewStep
           jobPosition={displayJobTitle}
-          currentQuestion={questions[currentQuestionIndex]?.text ?? ""}
+          currentQuestion={messages.filter((m) => m.role === "assistant").pop()?.content ?? ""}
           isAiTyping={isAiTyping}
           isTranscribing={isTranscribing}
           isInterviewComplete={isInterviewComplete}
-          questionIndex={Math.min(currentQuestionIndex + 1, Math.max(questions.length, 1))}
-          totalQuestions={questions.length}
+          progress={progress}
           onSendAnswer={handleSendAnswer}
           onTranscribeAudio={transcribeAudio}
           onFinish={handleFinish}

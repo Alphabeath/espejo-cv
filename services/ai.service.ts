@@ -6,7 +6,7 @@ import { groq } from "@ai-sdk/groq"
 import { PdfReader } from "pdfreader"
 import { z } from "zod"
 
-import type { AudioTranscription, InterviewPlan } from "@/lib/ai-types"
+import type { AudioTranscription, InterviewPlan, ChatReply, InterviewQuestion } from "@/lib/ai-types"
 
 const MAX_CV_TEXT_LENGTH = 14_000
 const INTERVIEW_QUESTION_COUNT = 5
@@ -25,6 +25,12 @@ const interviewPlanSchema = z.object({
 		)
 		.min(INTERVIEW_QUESTION_COUNT)
 		.max(INTERVIEW_QUESTION_COUNT + 3),
+})
+
+const chatReplySchema = z.object({
+	reply: z.string(),
+	isFinished: z.boolean(),
+	progress: z.number(),
 })
 
 function ensureEnv(name: string) {
@@ -126,9 +132,11 @@ async function extractPdfText(cvFile: File) {
 export async function generateInterviewPlan({
 	cvFile,
 	jobPosition,
+	interviewType,
 }: {
 	cvFile: File
 	jobPosition: string
+	interviewType: string
 }): Promise<InterviewPlan> {
 	ensureEnv("GROQ_API_KEY")
 
@@ -139,6 +147,28 @@ export async function generateInterviewPlan({
 	}
 
 	const cvText = await extractPdfText(cvFile)
+
+	let typeInstructions = ""
+	if (interviewType === "estructurada") {
+		typeInstructions = [
+			"Tipo de Entrevista: Estructurada.",
+			"Debes ser un entrevistador metódico. Las preguntas deben basarse estrictamente en competencias, validación del CV y resolución de brechas.",
+			"// [PLACEHOLDER PREGUNTAS ESTRUCTURADAS]",
+			// "Aqui van las preguntas predeterminadas"
+		].join("\n")
+	} else if (interviewType === "no-estructurada") {
+		typeInstructions = [
+			"Tipo de Entrevista: No Estructurada.",
+			"Debes tener una conversación abierta y exploratoria, con preguntas adaptables que indagan en la motivación y actitud.",
+		].join("\n")
+	} else if (interviewType === "informal") {
+		typeInstructions = [
+			"Tipo de Entrevista: Informal.",
+			"Adopta un tono muy casual, relajado y amigable para descubrir el 'fit cultural' y personalidad sin enfocarte estrictamente en habilidades técnicas.",
+		].join("\n")
+	} else {
+		typeInstructions = "Las preguntas deben mezclar experiencia, ajuste al rol, logros y capacidad de resolución."
+	}
 
 	const { object } = await generateObject({
 		model: groq("moonshotai/kimi-k2-instruct-0905"),
@@ -153,7 +183,8 @@ export async function generateInterviewPlan({
 			"roleSummary no debe incluir empresa, modalidad, ubicación, seniority redundante, stack excesivo ni detalles largos de la vacante salvo que sean esenciales para identificar el rol.",
 			`Devuelve exactamente ${INTERVIEW_QUESTION_COUNT} preguntas personalizadas, claras y sin respuesta sugerida.`,
 			`No devuelvas una sexta pregunta ni variantes extra. El máximo permitido es ${INTERVIEW_QUESTION_COUNT}.`,
-			"Las preguntas deben mezclar experiencia, ajuste al rol, logros y capacidad de resolución.",
+			typeInstructions,
+			"Mantén una postura conversacional: estás abierto a resolver las dudas del usuario. Si el usuario te hace una pregunta, resuélvela amablemente antes de continuar.",
 			"No generes evaluación final ni scoring.",
 			`Puesto: ${normalizedJobPosition}`,
 			`CV extraído: ${cvText}`,
@@ -216,4 +247,64 @@ export async function transcribeInterviewAudio({
 			endSecond: segment.endSecond,
 		})),
 	}
+}
+
+export async function generateChatReply({
+	messages,
+	cvSummary,
+	jobPosition,
+	interviewType,
+	focusAreas,
+    plannedQuestions,
+}: {
+	messages: { role: "user" | "assistant", content: string }[]
+	cvSummary: string
+	jobPosition: string
+	interviewType: string
+	focusAreas: string[]
+    plannedQuestions: InterviewQuestion[]
+}): Promise<ChatReply> {
+	ensureEnv("GROQ_API_KEY")
+
+	let typeInstructions = ""
+	if (interviewType === "estructurada") {
+		typeInstructions = "La entrevista es altamente estructurada y metódica. Limítate a hacer preguntas evaluando rígidamente o contestando sus dudas de forma técnica y rigurosa."
+	} else if (interviewType === "no-estructurada") {
+		typeInstructions = "Mantén una conversación abierta y profunda. Debes hilar las respuestas previas para explorar más del candidato, su experiencia y su actitud."
+	} else if (interviewType === "informal") {
+		typeInstructions = "Adopta un tono muy amigable, cálido y relajado. Conversa de manera fluida para conocer la actitud real del candidato (fit cultural)."
+	} else {
+        typeInstructions = "Mantén la evaluación conversacional y fluida."
+    }
+
+	const { object } = await generateObject({
+		model: groq("moonshotai/kimi-k2-instruct-0905"),
+		schema: chatReplySchema,
+		schemaName: "chat_reply",
+		system: [
+			"Eres un entrevistador corporativo de I.A. simulando una sesión de práctica.",
+			`Puesto al que postulan: ${jobPosition}`,
+			`Resumen del candidato: ${cvSummary}`,
+			`Áreas clave de enfoque: ${focusAreas.join(", ")}`,
+			`Preguntas u objetivos sugeridos (trata de integrarlos orgánicamente): \n${plannedQuestions.map(q => `- ${q.text}`).join("\n")}`,
+			typeInstructions,
+			"Tu objetivo es evaluar al candidato mediante un chat directo uno a uno. Lee sus respuestas, haz validaciones y formula tu siguiente comentario o pregunta de seguimiento.",
+			"Debes estar dispuesto a resolver sus dudas si te preguntan algo.",
+			"Utiliza 'isFinished' dándole el valor true cuando consideres que has agotado los temas de la simulación o cuando el usuario se despida voluntariamente sin más dudas (luego de unas 4 o 5 interacciones tuyas en promedio).",
+			"Actualiza el 'progress' a un número entero de 0 a 100 estimando el porcentaje de la entrevista completado (0 al inicio, 100 al finalizar).",
+			"IMPORTANTE: Debes responder estricta y únicamente con un objeto JSON válido. No incluyas bloques de markdown (```json), ni saludos fuera del esquema. Tu respuesta debe tener exactamente esta estructura: {\"reply\": string, \"isFinished\": boolean, \"progress\": number}.",
+		].join("\n\n"),
+		messages: messages.map((m) => ({
+			role: m.role,
+			content: m.content,
+		})),
+		providerOptions: {
+			groq: {
+				structuredOutputs: true,
+				strictJsonSchema: true,
+			},
+		},
+	})
+
+	return object
 }

@@ -9,6 +9,7 @@ export async function POST(request: Request) {
     const formData = await request.formData()
     const cvFile = formData.get("cvFile")
     const jobPosition = formData.get("jobPosition")
+    const interviewType = formData.get("interviewType") as string | null
 
     if (!(cvFile instanceof File)) {
       return NextResponse.json(
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
     const plan = await generateInterviewPlan({
       cvFile,
       jobPosition,
+      interviewType: interviewType || "estructurada",
     })
 
     return NextResponse.json(plan)
