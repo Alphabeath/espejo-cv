@@ -51,13 +51,7 @@ type CvSessionRow = Models.Row & {
 	jobOffer?: JobOfferRow | string | null
 	report?: ReportRow | string | null
 	jobOfferSource: "paste" | "url" | "manual"
-	jobOfferTitle?: string
-	jobOfferCompany?: string
 	status: DashboardSessionStatus
-	matchScore?: number
-	strengthsCount?: number
-	gapsCount?: number
-	questionCount?: number
 	startedAt: string
 	completedAt?: string
 	lastActivityAt: string
@@ -227,26 +221,18 @@ async function getSessionFileName(fileId: string) {
 }
 
 async function buildHistoryEntry(session: CvSessionRow): Promise<DashboardHistoryEntry> {
-	// Prioriza datos expandidos de relationships y usa campos denormalizados como fallback.
-	//
-	// Orden de prioridad:
-	// 1. datos completos de la relationship si fueron cargados,
-	// 2. campos denormalizados guardados en `cv_sessions`,
-	// 3. valores genéricos para no dejar huecos en pantalla.
+	// Los datos vienen de las relationships expandidas.
 	const jobOffer = getLoadedRelation(session.jobOffer)
 	const report = getLoadedRelation(session.report)
 	const fileName = await getSessionFileName(session.cvFileId)
 
-	// El score idealmente viene del reporte final. Si aún no existe,
-	// se usa `matchScore` guardado en la sesión como aproximación.
-	const score = toScore(report?.overallScore ?? session.matchScore)
+	const score = toScore(report?.overallScore)
 
 	return {
 		sessionId: session.$id,
-		role: jobOffer?.title ?? session.jobOfferTitle ?? "Sesión de práctica",
+		role: jobOffer?.title ?? "Sesión de práctica",
 		domain:
 			jobOffer?.company ??
-			session.jobOfferCompany ??
 			jobOffer?.seniority ??
 			session.jobOfferSource,
 		date: formatDate(session.startedAt),

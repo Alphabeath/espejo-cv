@@ -38,17 +38,11 @@ const collections = [
     id: "cv_sessions",
     name: "CV Sessions",
     attributes: [
-      { key: "userId", type: "string", size: 255, required: true },
-      { key: "cvFileId", type: "string", size: 255, required: true },
+      { key: "userId", type: "varchar", size: 255, required: true },
+      { key: "cvFileId", type: "varchar", size: 255, required: true },
       { key: "cvText", type: "longtext", required: true },
-      { key: "jobOfferSource", type: "string", size: 64, required: true },
-      { key: "jobOfferTitle", type: "string", size: 255, required: false },
-      { key: "jobOfferCompany", type: "string", size: 255, required: false },
-      { key: "status", type: "string", size: 64, required: true },
-      { key: "matchScore", type: "integer", required: false },
-      { key: "strengthsCount", type: "integer", required: false },
-      { key: "gapsCount", type: "integer", required: false },
-      { key: "questionCount", type: "integer", required: false },
+      { key: "jobOfferSource", type: "varchar", size: 64, required: true },
+      { key: "status", type: "varchar", size: 64, required: true },
       { key: "startedAt", type: "datetime", required: true },
       { key: "completedAt", type: "datetime", required: false },
       { key: "lastActivityAt", type: "datetime", required: true },
@@ -63,22 +57,15 @@ const collections = [
     id: "job_offers",
     name: "Job Offers",
     attributes: [
-      { key: "title", type: "string", size: 255, required: false },
-      { key: "company", type: "string", size: 255, required: false },
+      { key: "title", type: "varchar", size: 255, required: false },
+      { key: "company", type: "varchar", size: 255, required: false },
       { key: "sourceUrl", type: "url", required: false },
       { key: "rawText", type: "longtext", required: true },
       { key: "normalizedText", type: "longtext", required: true },
-      { key: "requirementsJson", type: "longtext", required: false },
-      { key: "seniority", type: "string", size: 128, required: false },
-      { key: "keywords", type: "longtext", required: false },
-      { key: "riskSignals", type: "longtext", required: false },
+      { key: "seniority", type: "varchar", size: 128, required: false },
       { key: "createdAt", type: "datetime", required: true },
     ],
-    indexes: [
-      { key: "idx_title", type: "key", attributes: ["title"] },
-      { key: "idx_company", type: "key", attributes: ["company"] },
-      { key: "idx_seniority", type: "key", attributes: ["seniority"] },
-    ],
+    indexes: [],
   },
   {
     id: "interview_turns",
@@ -87,15 +74,13 @@ const collections = [
       { key: "turnIndex", type: "integer", required: true },
       { key: "question", type: "text", required: true },
       { key: "answer", type: "longtext", required: false },
-      { key: "expectedSignal", type: "text", required: false },
       { key: "score", type: "integer", required: false },
       { key: "feedback", type: "longtext", required: false },
-      { key: "status", type: "string", size: 64, required: true },
+      { key: "status", type: "varchar", size: 64, required: true },
       { key: "askedAt", type: "datetime", required: true },
       { key: "answeredAt", type: "datetime", required: false },
     ],
     indexes: [
-      { key: "idx_turnIndex", type: "key", attributes: ["turnIndex"] },
       { key: "idx_status_askedAt", type: "key", attributes: ["status", "askedAt"] },
     ],
   },
@@ -110,7 +95,7 @@ const collections = [
       { key: "recommendations", type: "longtext", required: false },
       { key: "confidence", type: "integer", required: false },
       { key: "generatedAt", type: "datetime", required: true },
-      { key: "modelVersion", type: "string", size: 128, required: false },
+      { key: "modelVersion", type: "varchar", size: 128, required: false },
     ],
     indexes: [
       { key: "idx_overallScore", type: "key", attributes: ["overallScore"] },
@@ -280,7 +265,7 @@ async function ensureAttribute(collectionId, attribute) {
     array: false,
   }
 
-  if (attribute.type === "string") {
+  if (attribute.type === "string" || attribute.type === "varchar") {
     payload.size = attribute.size
   }
 
