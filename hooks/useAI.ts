@@ -95,6 +95,10 @@ export function useAI() {
 		}
 	}, [])
 
+	const loadInterviewPlan = useCallback((plan: InterviewPlan) => {
+		setInterviewPlan(plan)
+	}, [])
+
 	const reset = useCallback(() => {
 		setInterviewPlan(null)
 		setIsAnalyzing(false)
@@ -114,6 +118,7 @@ export function useAI() {
 		error,
 		createInterviewPlan,
 		transcribeAudio,
+		loadInterviewPlan,
 		reset,
 		clearError,
 	}

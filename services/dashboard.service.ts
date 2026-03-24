@@ -46,11 +46,9 @@ type ReportRow = Models.Row & {
 type CvSessionRow = Models.Row & {
 	userId: string
 	cvFileId: string
-	cvText: string
-	// Appwrite devuelve la relationship como row expandida o como ID si no se selecciona.
+	// cvText no se selecciona en la query del dashboard para evitar traer el longtext completo.
 	jobOffer?: JobOfferRow | string | null
 	report?: ReportRow | string | null
-	jobOfferSource: "paste" | "url" | "manual"
 	status: DashboardSessionStatus
 	startedAt: string
 	completedAt?: string
@@ -196,7 +194,13 @@ async function listSessions(userId: string, limit = 10) {
 			Query.orderDesc("startedAt"),
 			Query.limit(limit),
 			Query.select([
-				"*",
+				"$id",
+				"userId",
+				"cvFileId",
+				"status",
+				"startedAt",
+				"completedAt",
+				"lastActivityAt",
 				"jobOffer.title",
 				"jobOffer.company",
 				"jobOffer.seniority",
@@ -234,7 +238,7 @@ async function buildHistoryEntry(session: CvSessionRow): Promise<DashboardHistor
 		domain:
 			jobOffer?.company ??
 			jobOffer?.seniority ??
-			session.jobOfferSource,
+			"—",
 		date: formatDate(session.startedAt),
 		file: formatFileName(session.cvFileId, fileName ?? undefined),
 		score,

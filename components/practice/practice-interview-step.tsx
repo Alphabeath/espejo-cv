@@ -21,6 +21,7 @@ interface PracticeInterviewStepProps {
   jobPosition: string
   currentQuestion: string
   isAiTyping: boolean
+  isPreparing?: boolean
   isTranscribing?: boolean
   isInterviewComplete?: boolean
   questionIndex: number
@@ -36,6 +37,7 @@ export function PracticeInterviewStep({
   jobPosition,
   currentQuestion,
   isAiTyping,
+  isPreparing = false,
   isTranscribing = false,
   isInterviewComplete = false,
   questionIndex,
@@ -49,8 +51,11 @@ export function PracticeInterviewStep({
   const [answer, setAnswer] = useState("")
   const [isListening, setIsListening] = useState(false)
   const [isPersonaReady, setIsPersonaReady] = useState(false)
+  const isQuestionReady = currentQuestion.trim().length > 0
+  const effectivePreparing = isPreparing || (!isInterviewComplete && !isQuestionReady)
   const canSend =
     answer.trim().length > 0 &&
+    !effectivePreparing &&
     !isAiTyping &&
     !isTranscribing &&
     !isFinishing &&
@@ -70,7 +75,9 @@ export function PracticeInterviewStep({
   }
 
   const progress = totalQuestions > 0 ? ((questionIndex) / totalQuestions) * 100 : 0
-  const statusLabel = isInterviewComplete
+  const statusLabel = effectivePreparing
+    ? "Preparando entrevista"
+    : isInterviewComplete
     ? "Sesión completada"
     : isAiTyping
       ? "Analizando respuesta"
@@ -80,19 +87,26 @@ export function PracticeInterviewStep({
         ? "Escuchando respuesta"
         : "Tu turno"
 
-  const promptText = isInterviewComplete
+  const promptText = effectivePreparing
+    ? ""
+    : isInterviewComplete
     ? "La práctica terminó. Revisa la evaluación generada para esta simulación."
     : currentQuestion
 
-  const isPersonaListening = isListening && !isAiTyping && !isInterviewComplete
+  const isPersonaListening = isListening && !effectivePreparing && !isAiTyping && !isInterviewComplete
 
-  const personaState = isInterviewComplete
+  const personaState = effectivePreparing
+    ? "idle"
+    : isInterviewComplete
     ? "idle"
     : isAiTyping
       ? "thinking"
       : isPersonaListening
         ? "listening"
         : "idle"
+
+  const title = jobPosition.trim().length > 0 ? jobPosition : "Preparando entrevista"
+  const isResponseAreaReady = isPersonaReady && !effectivePreparing
 
   return (
     <div className="animate-fade-in flex flex-1 flex-col gap-0 overflow-hidden">
@@ -121,7 +135,7 @@ export function PracticeInterviewStep({
               Entrevistador IA
             </p>
             <h1 className="font-headline truncate text-xl font-bold leading-snug text-ec-on-surface text-glow">
-              {jobPosition}
+              {title}
             </h1>
           </div>
         </div>
@@ -143,11 +157,11 @@ export function PracticeInterviewStep({
         <section className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
           <div className="flex flex-col items-center gap-4">
             <Badge className="rounded-full bg-ec-primary-container px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-ec-on-primary-container">
-              {isInterviewComplete ? "Resumen" : `Pregunta ${questionIndex}`}
+              {effectivePreparing ? "Preparando" : isInterviewComplete ? "Resumen" : `Pregunta ${questionIndex}`}
             </Badge>
 
             <div className="quiet-surface w-full max-w-6xl rounded-[2rem] px-6 py-8 md:px-10 md:py-10 xl:max-w-7xl xl:px-12">
-              {isPersonaReady ? (
+              {!effectivePreparing && isPersonaReady ? (
                 <p className="font-headline text-xl font-bold leading-tight text-ec-on-surface text-glow md:text-[2rem] md:leading-[1.15] xl:text-[2rem]">
                   {promptText}
                 </p>
@@ -155,7 +169,7 @@ export function PracticeInterviewStep({
                 <div className="flex flex-col items-center gap-3 py-4 text-center">
                   <Loader2 className="size-5 animate-spin text-ec-primary" />
                   <p className="font-headline text-xl font-bold leading-tight text-ec-on-surface md:text-3xl">
-                    Estamos preparando todo para la entrevista
+                    Preparando entrevista
                   </p>
                   <p className="max-w-xl text-sm leading-relaxed text-ec-on-surface-variant">
                     En unos segundos verás al entrevistador y podrás responder con voz o texto.
@@ -188,7 +202,7 @@ export function PracticeInterviewStep({
               <SpeechInput
                 type="button"
                 size="icon"
-                disabled={isAiTyping || isTranscribing || isInterviewComplete || isFinishing || !isPersonaReady}
+                disabled={effectivePreparing || isAiTyping || isTranscribing || isInterviewComplete || isFinishing || !isPersonaReady}
                 onListeningChange={setIsListening}
                 onAudioRecorded={onTranscribeAudio}
                 preferredMode="server-transcription"
@@ -204,7 +218,7 @@ export function PracticeInterviewStep({
               />
               <div className="flex items-center gap-2 text-xs text-ec-on-surface-variant">
                 <Waves className="size-3.5" />
-                <span>{isPersonaReady ? statusLabel : "Inicializando entrevista"}</span>
+                <span>{isPersonaReady ? statusLabel : "Preparando entrevista"}</span>
               </div>
               {error && (
                 <p className="max-w-sm text-center text-xs text-destructive" role="alert">
@@ -218,12 +232,12 @@ export function PracticeInterviewStep({
         <div
           className={cn(
             "shrink-0 space-y-3 transition-all duration-500",
-            isPersonaReady
+            isResponseAreaReady
               ? "translate-y-0 opacity-100"
               : "pointer-events-none translate-y-4 opacity-0",
           )}
         >
-          {isPersonaReady && !isAiTyping && !isInterviewComplete && (
+          {isResponseAreaReady && !isAiTyping && !isInterviewComplete && (
             <p className="text-center text-xs text-ec-on-surface-variant animate-fade-in">
               Puedes responder con voz o ajustar el texto manualmente. Usa Ctrl+Enter para continuar.
             </p>
@@ -240,11 +254,13 @@ export function PracticeInterviewStep({
               onChange={(e) => setAnswer(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={
-                isInterviewComplete
+                effectivePreparing
+                  ? "Estamos preparando la entrevista..."
+                  : isInterviewComplete
                   ? "La entrevista terminó. Ya puedes revisar los resultados."
                   : "Tu respuesta aparecerá aquí mientras hablas o escribes."
               }
-              disabled={isAiTyping || isTranscribing || isInterviewComplete || isFinishing}
+              disabled={effectivePreparing || isAiTyping || isTranscribing || isInterviewComplete || isFinishing}
               rows={3}
               className={cn(
                 "min-h-22 resize-none rounded-2xl border-transparent bg-ec-surface-container-lowest px-4 py-3 text-sm shadow-none md:min-h-12",

@@ -41,7 +41,6 @@ const collections = [
       { key: "userId", type: "varchar", size: 255, required: true },
       { key: "cvFileId", type: "varchar", size: 255, required: true },
       { key: "cvText", type: "longtext", required: true },
-      { key: "jobOfferSource", type: "varchar", size: 64, required: true },
       { key: "status", type: "varchar", size: 64, required: true },
       { key: "startedAt", type: "datetime", required: true },
       { key: "completedAt", type: "datetime", required: false },

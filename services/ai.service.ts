@@ -167,6 +167,7 @@ export async function generateInterviewPlan({
 	})
 
 	return {
+		cvText,
 		cvSummary: normalizeWhitespace(object.cvSummary),
 		roleSummary: normalizeWhitespace(object.roleSummary),
 		focusAreas: object.focusAreas.map((item) => normalizeWhitespace(item)),

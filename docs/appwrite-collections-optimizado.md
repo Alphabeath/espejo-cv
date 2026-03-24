@@ -82,11 +82,11 @@ Representa el estado completo de una sesión de análisis y funciona como docume
 | `jobOffer` | relationship | no | sí | Relación 1:1 con `job_offers` |
 | `report` | relationship | no | sí | Relación 1:1 con `reports` |
 | `interviewTurns` | relationship | no | no | Relación 1:N inversa con `interview_turns` |
-| `jobOfferSource` | string | sí | no | `paste`, `url` o `manual` |
 | `status` | string | sí | no | `draft`, `analyzing`, `interviewing`, `completed`, `failed` |
 | `startedAt` | datetime | sí | no | Inicio de la sesión |
 | `completedAt` | datetime | no | no | Cierre de la sesión |
 | `lastActivityAt` | datetime | sí | no | Última actividad registrada |
+| `interviewType` | string | sí | no | Tipo de entrevista (`structured`, `semi-structured`, `informal`) |
 
 > **Campos eliminados respecto a la versión anterior:** `jobOfferTitle`, `jobOfferCompany`, `matchScore`, `strengthsCount`, `gapsCount` y `questionCount`. Eran copias denormalizadas que generaban una segunda fuente de verdad. El dashboard debe leer esos valores expandiendo `jobOffer` y `report`; Appwrite lo resuelve en una sola query sin necesidad de mantener duplicados sincronizados.
 
