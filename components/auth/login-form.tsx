@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 
@@ -20,6 +20,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/hooks/useAuth"
 
 export function LoginForm({
@@ -28,9 +29,22 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { login, isLoading, error } = useAuth()
+  const { toast } = useToast()
+  const { login, isLoading, error, clearError } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+
+  useEffect(() => {
+    if (!error) {
+      return
+    }
+
+    toast({
+      title: "No pudimos iniciar sesión",
+      description: error,
+    })
+    clearError()
+  }, [clearError, error, toast])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -94,11 +108,6 @@ export function LoginForm({
                 <FieldDescription className="text-center text-ec-on-surface-variant">
                   ¿No tienes una cuenta? <Link href="/auth/register">Regístrate</Link>
                 </FieldDescription>
-                {error ? (
-                  <FieldDescription className="text-center text-ec-error">
-                    {error}
-                  </FieldDescription>
-                ) : null}
               </Field>
             </FieldGroup>
           </form>

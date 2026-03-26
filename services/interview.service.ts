@@ -61,12 +61,165 @@ export type ContinueInterviewResult = {
   plan: InterviewPlan
 }
 
+export type UserCvFile = {
+  id: string
+  name: string
+  uploadedAt: string
+  isPrimary: boolean
+  sizeInBytes: number
+}
+
+function parsePreferredCvIds(rawValue: unknown) {
+  if (!rawValue) {
+    return [] as string[]
+  }
+
+  try {
+    const parsed = typeof rawValue === "string" ? JSON.parse(rawValue) : rawValue
+
+    if (!Array.isArray(parsed)) {
+      return []
+    }
+
+    return parsed
+      .filter((cv): cv is { id: string; isPrimary?: boolean } => {
+        if (!cv || typeof cv !== "object") {
+          return false
+        }
+
+        const candidate = cv as { id?: unknown; isPrimary?: unknown }
+        return typeof candidate.id === "string"
+      })
+      .sort((left, right) => Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary)))
+      .map((cv) => cv.id)
+  } catch {
+    return []
+  }
+}
+
+function formatCvUploadedAt(timestamp: string) {
+  return `Subido el ${new Date(timestamp).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  })}`
+}
+
+async function listOwnedSessionCvFileIds(userId: string) {
+  const { tables } = getServices()
+  const collectedIds = new Set<string>()
+  let cursorAfter: string | null = null
+
+  while (true) {
+    const response: Models.RowList<CvSessionRow> = await tables.listRows<CvSessionRow>({
+      databaseId: DATABASE_ID,
+      tableId: CV_SESSIONS_COLLECTION_ID,
+      queries: [
+        Query.equal("userId", userId),
+        Query.orderAsc("$id"),
+        Query.limit(100),
+        Query.select(["$id", "cvFileId"]),
+        ...(cursorAfter ? [Query.cursorAfter(cursorAfter)] : []),
+      ],
+    })
+
+    for (const row of response.rows) {
+      if (typeof row.cvFileId === "string" && row.cvFileId.length > 0) {
+        collectedIds.add(row.cvFileId)
+      }
+    }
+
+    if (response.rows.length < 100) {
+      break
+    }
+
+    cursorAfter = response.rows[response.rows.length - 1]?.$id ?? null
+
+    if (!cursorAfter) {
+      break
+    }
+  }
+
+  return [...collectedIds]
+}
+
+async function listAssociatedCvFileIdsForUser(user: Models.User<Models.Preferences>) {
+  const preferredCvIds = parsePreferredCvIds((user.prefs as Record<string, unknown> | undefined)?.cvList)
+  const sessionCvIds = await listOwnedSessionCvFileIds(user.$id)
+
+  return {
+    preferredCvIds,
+    associatedCvIds: [...new Set([...preferredCvIds, ...sessionCvIds])],
+  }
+}
+
 function getLoadedRelation<T>(value?: T | string | null) {
   if (!value || typeof value === "string") {
     return null
   }
 
   return value
+}
+
+export async function listCurrentUserCvFiles(): Promise<UserCvFile[]> {
+  const { account, storage } = getServices()
+  const user = await account.get()
+  const { preferredCvIds, associatedCvIds } = await listAssociatedCvFileIdsForUser(user)
+
+  if (associatedCvIds.length === 0) {
+    return []
+  }
+
+  const preferredIdsSet = new Set(preferredCvIds)
+  const ownedFiles = await Promise.all(
+    associatedCvIds.map(async (fileId) => {
+      try {
+        const file = await storage.getFile({
+          bucketId: CV_FILES_BUCKET_ID,
+          fileId,
+        })
+
+        const isOwnedByUser = file.$permissions.some((permission) => permission.includes(`user:${user.$id}`))
+
+        if (!isOwnedByUser || file.mimeType !== "application/pdf") {
+          return null
+        }
+
+        return file
+      } catch {
+        return null
+      }
+    }),
+  )
+
+  const sortedFiles = ownedFiles
+    .filter((file): file is Models.File => file !== null)
+    .sort((left, right) => {
+      const leftPreferredIndex = preferredCvIds.indexOf(left.$id)
+      const rightPreferredIndex = preferredCvIds.indexOf(right.$id)
+
+      if (leftPreferredIndex !== -1 || rightPreferredIndex !== -1) {
+        if (leftPreferredIndex === -1) {
+          return 1
+        }
+
+        if (rightPreferredIndex === -1) {
+          return -1
+        }
+
+        return leftPreferredIndex - rightPreferredIndex
+      }
+
+      return new Date(right.$createdAt).getTime() - new Date(left.$createdAt).getTime()
+    })
+
+  return sortedFiles.map((file, index) => ({
+    id: file.$id,
+    name: file.name,
+    uploadedAt: formatCvUploadedAt(file.$createdAt),
+    isPrimary: preferredIdsSet.size > 0 ? preferredIdsSet.has(file.$id) && preferredCvIds[0] === file.$id : index === 0,
+    sizeInBytes: file.sizeOriginal,
+  }))
 }
 
 async function getOwnedSession(sessionId: string, userId: string) {

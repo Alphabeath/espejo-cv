@@ -30,7 +30,6 @@ interface PracticeInterviewStepProps {
   onTranscribeAudio: (audioBlob: Blob) => Promise<string>
   onFinish: () => void
   isFinishing?: boolean
-  error?: string | null
 }
 
 export function PracticeInterviewStep({
@@ -46,7 +45,6 @@ export function PracticeInterviewStep({
   onTranscribeAudio,
   onFinish,
   isFinishing = false,
-  error = null,
 }: PracticeInterviewStepProps) {
   const [answer, setAnswer] = useState("")
   const [isListening, setIsListening] = useState(false)
@@ -220,11 +218,6 @@ export function PracticeInterviewStep({
                 <Waves className="size-3.5" />
                 <span>{isPersonaReady ? statusLabel : "Preparando entrevista"}</span>
               </div>
-              {error && (
-                <p className="max-w-sm text-center text-xs text-destructive" role="alert">
-                  {error}
-                </p>
-              )}
             </div>
           </div>
         </section>

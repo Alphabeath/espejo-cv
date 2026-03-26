@@ -4,6 +4,9 @@ import { useCallback, useState } from "react"
 
 import type { AudioTranscription, InterviewPlan } from "@/lib/ai-types"
 
+const ANALYZE_ERROR_MESSAGE = "No pudimos preparar la entrevista en este momento. Intenta nuevamente."
+const TRANSCRIBE_ERROR_MESSAGE = "No pudimos procesar el audio en este momento. Intenta nuevamente."
+
 async function parseJsonResponse<T>(response: Response): Promise<T> {
 	const payload = (await response.json().catch(() => null)) as
 		| (T & { error?: string })
@@ -47,13 +50,9 @@ export function useAI() {
 				setInterviewPlan(plan)
 				return plan
 			} catch (requestError) {
-				const message =
-					requestError instanceof Error
-						? requestError.message
-						: "No se pudo generar la entrevista.";
-
-				setError(message)
-				throw requestError
+				console.error("Failed to analyze CV", requestError)
+				setError(ANALYZE_ERROR_MESSAGE)
+				throw new Error(ANALYZE_ERROR_MESSAGE)
 			} finally {
 				setIsAnalyzing(false)
 			}
@@ -83,13 +82,9 @@ export function useAI() {
         
 			return transcription.text
 		} catch (requestError) {
-			const message =
-				requestError instanceof Error
-					? requestError.message
-					: "No se pudo transcribir el audio.";
-
-			setError(message)
-			throw requestError
+			console.error("Failed to transcribe audio", requestError)
+			setError(TRANSCRIBE_ERROR_MESSAGE)
+			throw new Error(TRANSCRIBE_ERROR_MESSAGE)
 		} finally {
 			setIsTranscribing(false)
 		}

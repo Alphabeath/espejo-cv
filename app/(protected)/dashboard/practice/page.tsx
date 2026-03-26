@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 import { useAI } from "@/hooks/useAI"
+import { useToast } from "@/components/ui/toast"
 import {
   PracticeUploadStep,
   PracticeInterviewStep,
@@ -57,12 +58,14 @@ const MOCK_RESULT: PracticeResult = {
 export default function PracticePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { toast } = useToast()
   const {
     questions,
     isAnalyzing,
     isTranscribing,
     error: aiError,
     createInterviewPlan,
+    clearError: clearAiError,
     loadInterviewPlan,
     transcribeAudio,
     reset: resetAI,
@@ -83,6 +86,32 @@ export default function PracticePage() {
 
   // Results state
   const [result, setResult] = useState<PracticeResult | null>(null)
+
+  useEffect(() => {
+    if (!aiError) {
+      return
+    }
+
+    toast({
+      title: "Ocurrió un problema al procesar la solicitud",
+      description: aiError,
+    })
+
+    clearAiError()
+  }, [aiError, clearAiError, toast])
+
+  useEffect(() => {
+    if (!pageError) {
+      return
+    }
+
+    toast({
+      title: "No pudimos continuar la práctica",
+      description: pageError,
+    })
+
+    setPageError(null)
+  }, [pageError, toast])
 
   useEffect(() => {
     if (!requestedSessionId || requestedSessionId === sessionId) {
@@ -116,6 +145,8 @@ export default function PracticePage() {
           return
         }
 
+        setStep("upload")
+        router.replace("/dashboard/practice")
         setPageError(
           restoreError instanceof Error
             ? restoreError.message
@@ -134,8 +165,6 @@ export default function PracticePage() {
       cancelled = true
     }
   }, [loadInterviewPlan, requestedSessionId, sessionId])
-
-  const activeError = pageError ?? aiError
 
   // ── Handlers ────────────────────────────────────────────────────────────
 
@@ -273,7 +302,6 @@ export default function PracticePage() {
         <PracticeUploadStep
           onStart={handleStart}
           isLoading={isAnalyzing}
-          error={activeError}
         />
       )}
 
@@ -291,7 +319,6 @@ export default function PracticePage() {
           onTranscribeAudio={transcribeAudio}
           onFinish={handleFinish}
           isFinishing={isFinishing}
-          error={activeError}
         />
       )}
 

@@ -1,92 +1,135 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { FileText, Upload, X, Briefcase, ArrowRight, Loader2 } from "lucide-react"
+import { FileText, Upload, X, Briefcase, ArrowRight, Loader2, CheckCircle2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { useToast } from "@/components/ui/toast"
 import { cn } from "@/lib/utils"
-import { useAuth } from "@/hooks/useAuth"
+import { useUserCvs } from "@/hooks/useUserCvs"
 import { getCvDownloadUrl } from "@/services/settings.service"
 
 interface PracticeUploadStepProps {
   onStart: (cvFile: File, jobPosition: string) => void
   isLoading?: boolean
-  error?: string | null
+}
+
+interface StoredCvDocument {
+  id: string
+  name: string
+  uploadedAt: string
+  isPrimary: boolean
+  sizeInBytes?: number
+}
+
+function getFallbackHeaders() {
+  const fallback = typeof window !== "undefined" ? window.localStorage.getItem("cookieFallback") : null
+  const headers: Record<string, string> = {}
+
+  if (fallback) {
+    headers["X-Fallback-Cookies"] = fallback
+  }
+
+  return headers
 }
 
 export function PracticeUploadStep({
   onStart,
   isLoading = false,
-  error = null,
 }: PracticeUploadStepProps) {
-  const { user } = useAuth()
+  const { toast } = useToast()
+  const { cvList: storedCvList, isLoading: isLoadingStoredCvs, error: storedCvError } = useUserCvs()
+  const hasStoredCvs = storedCvList.length > 0
   const [cvFile, setCvFile] = useState<File | null>(null)
   const [jobPosition, setJobPosition] = useState("")
   const [isDragging, setIsDragging] = useState(false)
-  const [isPreloading, setIsPreloading] = useState(true)
+  const [cvSource, setCvSource] = useState<"stored" | "upload">("stored")
+  const [selectedStoredCvId, setSelectedStoredCvId] = useState<string | null>(null)
+  const [isResolvingCv, setIsResolvingCv] = useState(false)
+  const [selectionError, setSelectionError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const isMountedRef = useRef(true)
+  const storedCvIdsKey = storedCvList.map((cv) => cv.id).join("|")
 
-  const canStart = cvFile !== null && jobPosition.trim().length > 0 && !isPreloading
+  const canStart = cvFile !== null && jobPosition.trim().length > 0 && !isResolvingCv
 
   useEffect(() => {
-    let mounted = true
+    isMountedRef.current = true
 
-    async function preloadPrimaryContext() {
-      if (!user) {
-        setIsPreloading(false)
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    setCvSource(hasStoredCvs ? "stored" : "upload")
+    setSelectedStoredCvId(null)
+    setCvFile(null)
+    setSelectionError(null)
+    setIsResolvingCv(false)
+  }, [hasStoredCvs, storedCvIdsKey])
+
+  async function resolveStoredCv(cv: StoredCvDocument) {
+    setSelectionError(null)
+    setSelectedStoredCvId(cv.id)
+    setCvFile(null)
+    setIsResolvingCv(true)
+
+    try {
+      const response = await fetch(getCvDownloadUrl(cv.id).toString(), {
+        headers: getFallbackHeaders(),
+      })
+
+      if (!response.ok) {
+        throw new Error(`status ${response.status}`)
+      }
+
+      const blob = await response.blob()
+
+      if (!isMountedRef.current) {
         return
       }
 
-      let cvList: any[] = []
-      try {
-        // @ts-expect-error Appwrite Preferences type does not infer custom keys
-        cvList = JSON.parse(user.prefs?.cvList || "[]")
-      } catch {}
+      setCvFile(new File([blob], cv.name, { type: blob.type || "application/pdf" }))
+    } catch (resolveError) {
+      console.error("Failed to load stored CV", resolveError)
 
-      const primary = cvList.find((c: any) => c.isPrimary) || (cvList.length === 1 ? cvList[0] : null)
-
-      if (primary) {
-        try {
-          const url = getCvDownloadUrl(primary.id)
-          
-          // Appwrite relies on X-Fallback-Cookies when 3rd party cookies are blocked
-          const fallback = typeof window !== "undefined" ? window.localStorage.getItem("cookieFallback") : null
-          const headers: Record<string, string> = {}
-          if (fallback) {
-            headers["X-Fallback-Cookies"] = fallback
-          }
-
-          const res = await fetch(url.toString(), {
-            headers,
-          })
-
-          if (res.ok && mounted) {
-            const blob = await res.blob()
-            const file = new File([blob], primary.name, { type: "application/pdf" })
-            setCvFile(file)
-          } else if (!res.ok) {
-            console.error("Failed to preload primary CV, status:", res.status)
-          }
-        } catch (err) {
-          console.error("Network error while preloading primary CV", err)
-        }
+      if (!isMountedRef.current) {
+        return
       }
-      
-      if (mounted) setIsPreloading(false)
-    }
 
-    preloadPrimaryContext()
-
-    return () => {
-      mounted = false
+      setSelectedStoredCvId(null)
+      setSelectionError("No se pudo cargar el CV seleccionado. Intenta de nuevo o sube uno nuevo.")
+    } finally {
+      if (isMountedRef.current) {
+        setIsResolvingCv(false)
+      }
     }
-  }, [user])
+  }
+
+  function handleSwitchToUpload() {
+    setCvSource("upload")
+    setSelectedStoredCvId(null)
+    setCvFile(null)
+    setSelectionError(null)
+    setIsResolvingCv(false)
+  }
+
+  function handleSwitchToStored() {
+    setCvSource("stored")
+    setCvFile(null)
+    setSelectionError(null)
+    setIsResolvingCv(false)
+  }
 
   function handleFileChange(file: File | null) {
     if (!file) return
     if (file.type !== "application/pdf") return
+    setCvSource("upload")
+    setSelectedStoredCvId(null)
+    setSelectionError(null)
     setCvFile(file)
   }
 
@@ -97,9 +140,33 @@ export function PracticeUploadStep({
     handleFileChange(file)
   }
 
+  const shouldShowStoredCvList = cvSource === "stored" && (hasStoredCvs || isLoadingStoredCvs)
+  const selectedStoredCv = storedCvList.find((cv) => cv.id === selectedStoredCvId) ?? null
+  const helperMessage = !cvFile
+    ? shouldShowStoredCvList
+      ? "Selecciona uno de tus CVs o sube uno nuevo para continuar."
+      : "Sube tu CV para continuar."
+    : "Describe el puesto para continuar."
+
+  useEffect(() => {
+    const nextError = selectionError ?? storedCvError
+
+    if (!nextError) {
+      return
+    }
+
+    toast({
+      title: "No pudimos cargar tu CV",
+      description: nextError,
+    })
+
+    if (selectionError) {
+      setSelectionError(null)
+    }
+  }, [selectionError, storedCvError, toast])
+
   return (
     <div className="animate-fade-in-up flex flex-col gap-10">
-      {/* Page headline */}
       <div className="space-y-2">
         <p className="text-xs font-medium tracking-widest text-ec-primary uppercase">
           Paso 1 de 3
@@ -108,21 +175,128 @@ export function PracticeUploadStep({
           Prepara tu sesión
         </h1>
         <p className="text-sm text-ec-on-surface-variant leading-relaxed max-w-sm">
-          Sube tu CV en PDF e indica el puesto al que postulas. La IA personalizará la entrevista en base a tu perfil. 
-          {/* @ts-expect-error Appwrite Preferences type does not infer custom keys */}
-          {user?.prefs?.cvList && " Tu CV principal ha sido precargado."}
+          Elige uno de tus CVs guardados o sube uno nuevo en PDF. La IA personalizará la entrevista en base a tu perfil.
         </p>
       </div>
 
       <div className="quiet-surface rounded-3xl p-6 md:p-8">
         <div className="grid gap-10 lg:grid-cols-[280px_1fr] items-start">
-          {/* CV Upload zone */}
           <div className="flex flex-col gap-3 lg:sticky lg:top-8">
             <Label className="text-sm font-semibold text-ec-on-surface">
               Tu currículum <span className="text-ec-on-surface-variant font-normal">(PDF)</span>
             </Label>
 
-            {cvFile ? (
+            {(hasStoredCvs || isLoadingStoredCvs) && (
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-ec-surface-container-low p-1">
+                <button
+                  type="button"
+                  onClick={handleSwitchToStored}
+                  className={cn(
+                    "rounded-xl px-3 py-2 text-xs font-semibold transition-colors",
+                    shouldShowStoredCvList
+                      ? "bg-ec-surface-container-lowest text-ec-on-surface shadow-sm"
+                      : "text-ec-on-surface-variant hover:text-ec-on-surface",
+                  )}
+                >
+                  Elegir guardado
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSwitchToUpload}
+                  className={cn(
+                    "rounded-xl px-3 py-2 text-xs font-semibold transition-colors",
+                    !shouldShowStoredCvList
+                      ? "bg-ec-surface-container-lowest text-ec-on-surface shadow-sm"
+                      : "text-ec-on-surface-variant hover:text-ec-on-surface",
+                  )}
+                >
+                  Subir nuevo
+                </button>
+              </div>
+            )}
+
+            {shouldShowStoredCvList ? (
+              <div className="flex min-h-80 max-h-94 flex-col gap-3 overflow-y-auto rounded-2xl bg-ec-surface-container-lowest p-4 shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]">
+                {isLoadingStoredCvs ? (
+                  <div className="flex min-h-56 items-center justify-center gap-2 rounded-2xl bg-ec-surface-container-low px-4 text-sm text-ec-on-surface-variant">
+                    <Loader2 className="size-4 animate-spin" />
+                    Cargando tus CVs…
+                  </div>
+                ) : storedCvList.length === 0 ? (
+                  <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl bg-ec-surface-container-low px-4 text-center">
+                    <div className="flex size-12 items-center justify-center rounded-2xl bg-ec-surface-container-high text-ec-on-surface-variant">
+                      <FileText className="size-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-ec-on-surface">No encontramos CVs guardados</p>
+                      <p className="mt-1 text-xs text-ec-on-surface-variant">Sube uno nuevo para comenzar tu práctica.</p>
+                    </div>
+                  </div>
+                ) : (
+                  storedCvList.map((cv) => {
+                    const isSelected = cv.id === selectedStoredCvId
+
+                    return (
+                      <button
+                        key={cv.id}
+                        type="button"
+                        onClick={() => void resolveStoredCv(cv)}
+                        disabled={isResolvingCv}
+                        className={cn(
+                          "flex items-start gap-3 rounded-2xl border px-4 py-3 text-left transition-all",
+                          isSelected
+                            ? "border-ec-primary/50 bg-ec-primary-container/40"
+                            : "border-ec-outline-variant/10 bg-ec-surface-container-low hover:border-ec-primary/30 hover:bg-ec-surface-container-high",
+                        )}
+                      >
+                        <div className={cn(
+                          "mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl",
+                          isSelected
+                            ? "bg-ec-primary-container text-ec-on-primary-container"
+                            : "bg-ec-surface-container-high text-ec-on-surface-variant",
+                        )}>
+                          {isSelected ? <CheckCircle2 className="size-4" /> : <FileText className="size-4" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-sm font-semibold text-ec-on-surface">{cv.name}</p>
+                            {cv.isPrimary && (
+                              <span className="rounded-full bg-ec-secondary-container px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ec-on-secondary-container">
+                                Principal
+                              </span>
+                            )}
+                          </div>
+                          {cv.uploadedAt && (
+                            <p className="mt-1 text-xs text-ec-on-surface-variant">{cv.uploadedAt}</p>
+                          )}
+                          {typeof cv.sizeInBytes === "number" && (
+                            <p className="mt-1 text-[11px] text-ec-on-surface-variant">
+                              {(cv.sizeInBytes / 1024).toFixed(0)} KB · PDF
+                            </p>
+                          )}
+                          <p className="mt-2 text-xs font-medium text-ec-primary">
+                            {isSelected ? "CV seleccionado" : "Usar este CV"}
+                          </p>
+                        </div>
+                      </button>
+                    )
+                  })
+                )}
+
+                {isResolvingCv && (
+                  <div className="flex items-center gap-2 rounded-xl bg-ec-surface-container-low px-3 py-2 text-xs text-ec-on-surface-variant">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Cargando el CV seleccionado…
+                  </div>
+                )}
+
+                {selectedStoredCv && cvFile && !isResolvingCv && (
+                  <div className="rounded-xl border border-ec-primary/20 bg-ec-primary-container/25 px-3 py-2 text-xs text-ec-on-surface">
+                    Usarás <span className="font-semibold">{selectedStoredCv.name}</span> para esta práctica.
+                  </div>
+                )}
+              </div>
+            ) : cvFile ? (
               <div className="group relative flex min-h-80 flex-col items-center justify-center gap-4 rounded-2xl border border-ec-outline-variant/10 bg-ec-surface-container-lowest px-5 py-8 animate-fade-in shadow-sm">
                 <div className="flex size-14 items-center justify-center rounded-2xl bg-ec-primary-container">
                   <FileText className="size-6 text-ec-on-primary-container" />
@@ -180,14 +354,16 @@ export function PracticeUploadStep({
                   type="file"
                   accept="application/pdf"
                   className="sr-only"
-                  onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
+                  onChange={(e) => {
+                    handleFileChange(e.target.files?.[0] ?? null)
+                    e.target.value = ""
+                  }}
                   aria-label="Seleccionar archivo PDF"
                 />
               </div>
             )}
           </div>
 
-          {/* Job position field */}
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-4">
               <Label htmlFor="job-position" className="text-sm font-semibold text-ec-on-surface">
@@ -218,7 +394,7 @@ export function PracticeUploadStep({
       <div className="flex flex-col gap-3">
         {!canStart && (
           <p className="text-[11px] text-ec-on-surface-variant">
-            {!cvFile ? "Sube tu CV para continuar." : "Describe el puesto para continuar."}
+            {helperMessage}
           </p>
         )}
         <Button
@@ -240,13 +416,6 @@ export function PracticeUploadStep({
           )}
         </Button>
       </div>
-
-
-      {error && (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      )}
     </div>
   )
 }
