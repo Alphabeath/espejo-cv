@@ -1,7 +1,7 @@
 import type { DashboardMetric } from "@/services/dashboard.service"
 
 export function DashboardHeader({
-  title = "Historial de práctica",
+  title = "Panel de prácticas",
   description =
     "Revisa tu progreso y analiza tus resultados en simulaciones pasadas para perfeccionar tu narrativa profesional.",
   metrics = [

@@ -6,6 +6,7 @@ export type InterviewQuestion = {
 }
 
 export type InterviewPlan = {
+  cvText: string
   cvSummary: string
   roleSummary: string
   focusAreas: string[]

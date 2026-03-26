@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/components/ui/toast"
 import {
   SettingsProfileSection,
   SettingsCvSection,
@@ -22,6 +23,7 @@ import {
 
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth()
+  const { toast } = useToast()
 
   const [profile, setProfile] = useState({
     name: "",
@@ -97,6 +99,10 @@ export default function SettingsPage() {
       await refreshUser()
     } catch (error) {
       console.error("Failed to upload CV", error)
+      toast({
+        title: "No pudimos subir tu CV",
+        description: "Intenta nuevamente en unos instantes.",
+      })
     } finally {
       setIsUploading(false)
     }
@@ -121,6 +127,10 @@ export default function SettingsPage() {
       await refreshUser()
     } catch (error) {
       console.error("Failed to delete CV", error)
+      toast({
+        title: "No pudimos eliminar el CV",
+        description: "Intenta nuevamente en unos instantes.",
+      })
     }
   }
 
@@ -135,6 +145,10 @@ export default function SettingsPage() {
       await refreshUser()
     } catch (error) {
       console.error("Failed to set primary CV", error)
+      toast({
+        title: "No pudimos actualizar tu CV principal",
+        description: "Intenta nuevamente en unos instantes.",
+      })
     }
   }
 
@@ -164,6 +178,10 @@ export default function SettingsPage() {
       setTimeout(() => window.URL.revokeObjectURL(objectUrl), 100)
     } catch (error) {
       console.error("Download fallback to new tab:", error)
+      toast({
+        title: "No pudimos descargar el CV",
+        description: "Intentaremos abrirlo en una nueva pestaña.",
+      })
       window.open(getCvDownloadUrl(id), "_blank")
     }
   }
@@ -187,6 +205,10 @@ export default function SettingsPage() {
       await refreshUser()
     } catch (error) {
       console.error("Failed to update profile", error)
+      toast({
+        title: "No pudimos guardar la configuración",
+        description: "Intenta nuevamente en unos instantes.",
+      })
     } finally {
       setIsSaving(false)
     }

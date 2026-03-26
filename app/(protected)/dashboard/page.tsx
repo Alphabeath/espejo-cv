@@ -1,5 +1,8 @@
 "use client"
 
+import { useEffect } from "react"
+
+import { useToast } from "@/components/ui/toast"
 import {
   DashboardHeader,
   DashboardHistoryTable,
@@ -8,7 +11,19 @@ import {
 import { useDashboard } from "@/hooks/useDashboard"
 
 export default function Dashboard() {
+  const { toast } = useToast()
   const { entries, metrics, summary, isLoading, error, hasEntries } = useDashboard()
+
+  useEffect(() => {
+    if (!error) {
+      return
+    }
+
+    toast({
+      title: "No pudimos cargar el dashboard",
+      description: "Intenta nuevamente en unos instantes.",
+    })
+  }, [error, toast])
 
   const lowestScoreEntry = entries.reduce<typeof entries[number] | null>((lowest, entry) => {
     if (!lowest || entry.score < lowest.score) {
@@ -43,8 +58,8 @@ export default function Dashboard() {
           Cargando historial y métricas del dashboard...
         </section>
       ) : error ? (
-        <section className="mb-8 rounded-2xl border border-red-200 bg-red-50 px-6 py-10 text-sm text-red-700">
-          No se pudo cargar el dashboard. {error}
+        <section className="mb-8 rounded-2xl bg-ec-surface-container-low px-6 py-10 text-sm text-ec-on-surface-variant">
+          No pudimos cargar el dashboard en este momento. Intenta nuevamente en unos instantes.
         </section>
       ) : hasEntries ? (
         <DashboardHistoryTable entries={entries} />

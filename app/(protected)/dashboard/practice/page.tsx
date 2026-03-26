@@ -1,9 +1,10 @@
 "use client"
 
-import { useCallback, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useCallback, useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { useAI } from "@/hooks/useAI"
+import { useToast } from "@/components/ui/toast"
 import {
   PracticeUploadStep,
   PracticeInterviewStep,
@@ -11,143 +12,311 @@ import {
 } from "@/components/practice"
 import type { PracticeResult } from "@/components/practice"
 import type { InterviewType } from "@/lib/ai-types"
+import {
+  answerInterviewTurn,
+  completeInterviewSession,
+  continueInterviewSession,
+  startInterviewSession,
+} from "@/services/interview.service"
+import {
+  getSessionFeedbackData,
+  saveReport,
+  updateTurnFeedback,
+} from "@/services/feedback.service"
 
 // ─── Step machine ────────────────────────────────────────────────────────────
 type Step = "upload" | "interview" | "results"
 
-const MOCK_RESULT: PracticeResult = {
-  score: 74,
-  jobPosition: "",
-  totalQuestions: 0,
-  duration: 312,
-  summary:
-    "Demostraste sólidos conocimientos técnicos y buena comunicación. Tu mayor área de crecimiento es estructurar las respuestas con el método STAR para mayor claridad y persuasión ante el entrevistador.",
-  feedback: [
-    {
-      label: "Claridad técnica",
-      description: "Explicaste conceptos complejos de forma accesible y coherente.",
-      type: "strength",
-    },
-    {
-      label: "Escucha activa",
-      description: "Respondiste con precisión a lo preguntado sin desviarte del tema.",
-      type: "strength",
-    },
-    {
-      label: "Estructura STAR",
-      description:
-        "Algunas respuestas carecían de contexto o resultado explícito. Prueba Situación → Tarea → Acción → Resultado.",
-      type: "improvement",
-    },
-    {
-      label: "Preguntas al entrevistador",
-      description:
-        "No formulaste preguntas de retorno. Esto puede percibirse como bajo interés en la empresa.",
-      type: "improvement",
-    },
-  ],
-}
-
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function PracticePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { toast } = useToast()
   const {
-    interviewPlan,
     questions,
     isAnalyzing,
     isTranscribing,
     error: aiError,
     createInterviewPlan,
+    clearError: clearAiError,
+    loadInterviewPlan,
     transcribeAudio,
-    sendChatMessage,
     reset: resetAI,
   } = useAI()
+  const requestedSessionId = searchParams.get("sessionId")
 
   const [step, setStep] = useState<Step>("upload")
 
   // Interview step state
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [displayJobTitle, setDisplayJobTitle] = useState("")
   const [isAiTyping, setIsAiTyping] = useState(false)
-  
-  // Conversational state
-  const [messages, setMessages] = useState<{role: "user" | "assistant", content: string}[]>([])
-  const [progress, setProgress] = useState(0)
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
 
   const [isInterviewComplete, setIsInterviewComplete] = useState(false)
   const [isFinishing, setIsFinishing] = useState(false)
+  const [isRestoring, setIsRestoring] = useState(false)
+  const [pageError, setPageError] = useState<string | null>(null)
 
   // Results state
   const [result, setResult] = useState<PracticeResult | null>(null)
+
+  useEffect(() => {
+    if (!aiError) {
+      return
+    }
+
+    toast({
+      title: "Ocurrió un problema al procesar la solicitud",
+      description: aiError,
+    })
+
+    clearAiError()
+  }, [aiError, clearAiError, toast])
+
+  useEffect(() => {
+    if (!pageError) {
+      return
+    }
+
+    toast({
+      title: "No pudimos continuar la práctica",
+      description: pageError,
+    })
+
+    setPageError(null)
+  }, [pageError, toast])
+
+  useEffect(() => {
+    if (!requestedSessionId || requestedSessionId === sessionId) {
+      return
+    }
+
+    const sessionIdToRestore = requestedSessionId
+
+    let cancelled = false
+
+    async function restoreSession() {
+      setPageError(null)
+      setIsRestoring(true)
+      setStep("interview")
+
+      try {
+        const restoredSession = await continueInterviewSession(sessionIdToRestore)
+
+        if (cancelled) {
+          return
+        }
+
+        loadInterviewPlan(restoredSession.plan)
+        setSessionId(restoredSession.sessionId)
+        setDisplayJobTitle(restoredSession.plan.roleSummary)
+        setCurrentQuestionIndex(restoredSession.currentQuestionIndex)
+        setIsInterviewComplete(restoredSession.isInterviewComplete)
+        setStep("interview")
+      } catch (restoreError) {
+        if (cancelled) {
+          return
+        }
+
+        setStep("upload")
+        router.replace("/dashboard/practice")
+        setPageError(
+          restoreError instanceof Error
+            ? restoreError.message
+            : "No se pudo reanudar la sesión seleccionada.",
+        )
+      } finally {
+        if (!cancelled) {
+          setIsRestoring(false)
+        }
+      }
+    }
+
+    void restoreSession()
+
+    return () => {
+      cancelled = true
+    }
+  }, [loadInterviewPlan, requestedSessionId, router, sessionId])
 
   // ── Handlers ────────────────────────────────────────────────────────────
 
   /** Step 1 → 2: user submits CV + job position + interview type */
   const handleStart = useCallback(async (cvFile: File, position: string, type: InterviewType) => {
+    setPageError(null)
     const plan = await createInterviewPlan(cvFile, position, type)
 
+    // Persiste la sesión, la oferta y los turnos en Appwrite
+    const { sessionId: newSessionId } = await startInterviewSession({
+      cvFile,
+      jobPosition: position,
+      plan,
+    })
+
+    setSessionId(newSessionId)
     setDisplayJobTitle(plan.roleSummary)
-    setProgress(0)
+    setCurrentQuestionIndex(0)
     setIsInterviewComplete(false)
+    router.replace(`/dashboard/practice?sessionId=${newSessionId}`)
 
     if (plan.questions.length > 0) {
-      setMessages([{ role: "assistant", content: plan.questions[0].text }])
       setStep("interview")
     }
-  }, [createInterviewPlan])
+  }, [createInterviewPlan, router])
 
   /** Step 2: user sends an answer */
   const handleSendAnswer = useCallback(
     async (answer: string) => {
+      if (!sessionId) {
+        setPageError("No se encontró una sesión activa para continuar la entrevista.")
+        return
+      }
+
+      setPageError(null)
       setIsAiTyping(true)
 
-      const newHistory = [...messages, { role: "user" as const, content: answer }]
-      setMessages(newHistory)
-
       try {
-        if (!interviewPlan) return;
+        await answerInterviewTurn({
+          sessionId,
+          turnIndex: currentQuestionIndex,
+          answer,
+        })
 
-        const aiResponse = await sendChatMessage({
-          messages: newHistory,
-          cvSummary: interviewPlan.cvSummary,
-          jobPosition: displayJobTitle,
-          interviewType: interviewPlan.interviewType || "estructurada",
-          focusAreas: interviewPlan.focusAreas,
-          plannedQuestions: interviewPlan.questions
-        });
+        await new Promise((r) => setTimeout(r, 700))
 
-        setMessages([...newHistory, { role: "assistant" as const, content: aiResponse.reply }]);
-        setProgress(aiResponse.progress);
+        const isLastQuestion = currentQuestionIndex >= questions.length - 1
 
-        if (aiResponse.isFinished) {
-          setIsInterviewComplete(true);
+        if (isLastQuestion) {
+          setIsInterviewComplete(true)
+        } else {
+          setCurrentQuestionIndex((index) => index + 1)
         }
-      } catch(e) {
+      } catch (submitError) {
+        setPageError(
+          submitError instanceof Error
+            ? submitError.message
+            : "No se pudo guardar la respuesta de la entrevista.",
+        )
       } finally {
-        setIsAiTyping(false);
+        setIsAiTyping(false)
       }
     },
-    [messages, interviewPlan, displayJobTitle, sendChatMessage],
+    [currentQuestionIndex, questions.length, sessionId],
   )
 
   /** Step 2 → 3: user finishes interview */
   const handleFinish = useCallback(async () => {
     setIsFinishing(true)
-    await new Promise((r) => setTimeout(r, 1800))
-    setResult({ ...MOCK_RESULT, jobPosition: displayJobTitle, totalQuestions: questions.length })
-    setIsFinishing(false)
-    setStep("results")
-  }, [displayJobTitle, questions.length])
+
+    try {
+      if (sessionId) {
+        await completeInterviewSession(sessionId)
+      }
+
+      if (!sessionId) {
+        throw new Error("No se encontró una sesión activa.")
+      }
+
+      // 1. Read session data client-side (browser Appwrite session)
+      const sessionData = await getSessionFeedbackData(sessionId)
+
+      if (sessionData.turns.length === 0) {
+        throw new Error("La sesión no tiene respuestas para evaluar.")
+      }
+
+      // 2. Send raw data to API for AI generation (server-side only)
+      const feedbackResponse = await fetch("/api/ai/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cvText: sessionData.cvText,
+          jobPosition: sessionData.jobPosition,
+          turns: sessionData.turns.map((t) => ({
+            turnIndex: t.turnIndex,
+            question: t.question,
+            answer: t.answer,
+          })),
+        }),
+      })
+
+      const feedbackData = await feedbackResponse.json()
+
+      if (!feedbackResponse.ok) {
+        throw new Error(feedbackData.error || "No se pudo generar la evaluación.")
+      }
+
+      // 3. Persist report and per-turn feedback client-side
+      await saveReport(sessionId, sessionData.userId, {
+        overallScore: feedbackData.overallScore,
+        summary: feedbackData.summary,
+        strengths: JSON.stringify(feedbackData.strengths),
+        gaps: JSON.stringify(feedbackData.gaps),
+        recommendations: JSON.stringify(feedbackData.recommendations),
+        confidence: feedbackData.confidence,
+      })
+
+      await Promise.all(
+        (feedbackData.turnScores ?? []).map(
+          (ts: { turnIndex: number; score: number; feedback: string }) => {
+            const matchingTurn = sessionData.turns.find(
+              (t) => t.turnIndex === ts.turnIndex,
+            )
+            if (!matchingTurn) return Promise.resolve()
+            return updateTurnFeedback(matchingTurn.id, ts.score, ts.feedback)
+          },
+        ),
+      )
+
+      // Map AI feedback to PracticeResult shape
+      const strengths = (feedbackData.strengths ?? []).map(
+        (s: { label: string; description: string }) => ({
+          label: s.label,
+          description: s.description,
+          type: "strength" as const,
+        }),
+      )
+
+      const improvements = (feedbackData.gaps ?? []).map(
+        (g: { label: string; description: string }) => ({
+          label: g.label,
+          description: g.description,
+          type: "improvement" as const,
+        }),
+      )
+
+      setResult({
+        score: feedbackData.overallScore ?? 0,
+        jobPosition: displayJobTitle,
+        totalQuestions: questions.length,
+        duration: 0,
+        summary: feedbackData.summary ?? "",
+        feedback: [...strengths, ...improvements],
+      })
+      setStep("results")
+    } catch (finishError) {
+      setPageError(
+        finishError instanceof Error
+          ? finishError.message
+          : "No se pudo completar la sesión de entrevista.",
+      )
+    } finally {
+      setIsFinishing(false)
+    }
+  }, [displayJobTitle, questions.length, sessionId])
 
   /** Step 3 → 1: start over */
   const handleNewPractice = useCallback(() => {
     setStep("upload")
-    setMessages([])
-    setProgress(0)
+    setSessionId(null)
+    setCurrentQuestionIndex(0)
     setIsInterviewComplete(false)
     setDisplayJobTitle("")
     setResult(null)
+    setPageError(null)
     resetAI()
-  }, [resetAI])
+    router.replace("/dashboard/practice")
+  }, [resetAI, router])
 
   // ── Render ──────────────────────────────────────────────────────────────
 
@@ -180,27 +349,27 @@ export default function PracticePage() {
       )}
 
       {/* Step content */}
-      {step === "upload" && (
+      {step === "upload" && !isRestoring && (
         <PracticeUploadStep
           onStart={handleStart}
           isLoading={isAnalyzing}
-          error={aiError}
         />
       )}
 
       {step === "interview" && (
         <PracticeInterviewStep
           jobPosition={displayJobTitle}
-          currentQuestion={messages.filter((m) => m.role === "assistant").pop()?.content ?? ""}
+          currentQuestion={questions[currentQuestionIndex]?.text ?? ""}
           isAiTyping={isAiTyping}
+          isPreparing={isRestoring}
           isTranscribing={isTranscribing}
           isInterviewComplete={isInterviewComplete}
-          progress={progress}
+          questionIndex={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
           onSendAnswer={handleSendAnswer}
           onTranscribeAudio={transcribeAudio}
           onFinish={handleFinish}
           isFinishing={isFinishing}
-          error={aiError}
         />
       )}
 
@@ -209,6 +378,7 @@ export default function PracticePage() {
           result={result}
           onNewPractice={handleNewPractice}
           onGoToDashboard={() => router.push("/dashboard")}
+          onGoToFeedback={() => router.push("/dashboard/feedback")}
         />
       )}
     </main>

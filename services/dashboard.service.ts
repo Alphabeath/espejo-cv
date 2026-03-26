@@ -46,18 +46,10 @@ type ReportRow = Models.Row & {
 type CvSessionRow = Models.Row & {
 	userId: string
 	cvFileId: string
-	cvText: string
-	// Appwrite devuelve la relationship como row expandida o como ID si no se selecciona.
+	// cvText no se selecciona en la query del dashboard para evitar traer el longtext completo.
 	jobOffer?: JobOfferRow | string | null
 	report?: ReportRow | string | null
-	jobOfferSource: "paste" | "url" | "manual"
-	jobOfferTitle?: string
-	jobOfferCompany?: string
 	status: DashboardSessionStatus
-	matchScore?: number
-	strengthsCount?: number
-	gapsCount?: number
-	questionCount?: number
 	startedAt: string
 	completedAt?: string
 	lastActivityAt: string
@@ -202,7 +194,13 @@ async function listSessions(userId: string, limit = 10) {
 			Query.orderDesc("startedAt"),
 			Query.limit(limit),
 			Query.select([
-				"*",
+				"$id",
+				"userId",
+				"cvFileId",
+				"status",
+				"startedAt",
+				"completedAt",
+				"lastActivityAt",
 				"jobOffer.title",
 				"jobOffer.company",
 				"jobOffer.seniority",
@@ -227,28 +225,20 @@ async function getSessionFileName(fileId: string) {
 }
 
 async function buildHistoryEntry(session: CvSessionRow): Promise<DashboardHistoryEntry> {
-	// Prioriza datos expandidos de relationships y usa campos denormalizados como fallback.
-	//
-	// Orden de prioridad:
-	// 1. datos completos de la relationship si fueron cargados,
-	// 2. campos denormalizados guardados en `cv_sessions`,
-	// 3. valores genéricos para no dejar huecos en pantalla.
+	// Los datos vienen de las relationships expandidas.
 	const jobOffer = getLoadedRelation(session.jobOffer)
 	const report = getLoadedRelation(session.report)
 	const fileName = await getSessionFileName(session.cvFileId)
 
-	// El score idealmente viene del reporte final. Si aún no existe,
-	// se usa `matchScore` guardado en la sesión como aproximación.
-	const score = toScore(report?.overallScore ?? session.matchScore)
+	const score = toScore(report?.overallScore)
 
 	return {
 		sessionId: session.$id,
-		role: jobOffer?.title ?? session.jobOfferTitle ?? "Sesión de práctica",
+		role: jobOffer?.title ?? "Sesión de práctica",
 		domain:
 			jobOffer?.company ??
-			session.jobOfferCompany ??
 			jobOffer?.seniority ??
-			session.jobOfferSource,
+			"—",
 		date: formatDate(session.startedAt),
 		file: formatFileName(session.cvFileId, fileName ?? undefined),
 		score,

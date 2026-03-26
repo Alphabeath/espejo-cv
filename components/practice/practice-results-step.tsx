@@ -35,6 +35,7 @@ interface PracticeResultsStepProps {
   result: PracticeResult
   onNewPractice: () => void
   onGoToDashboard: () => void
+  onGoToFeedback?: () => void
 }
 
 function ScoreArc({ score }: { score: number }) {
@@ -131,6 +132,7 @@ export function PracticeResultsStep({
   result,
   onNewPractice,
   onGoToDashboard,
+  onGoToFeedback,
 }: PracticeResultsStepProps) {
   const { strengths, improvements } = useMemo(() => {
     return {
@@ -268,6 +270,17 @@ export function PracticeResultsStep({
           Ver historial
           <ArrowRight className="size-4" />
         </Button>
+        {onGoToFeedback && (
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={onGoToFeedback}
+            className="gap-2 rounded-xl px-7 text-sm"
+          >
+            Ver feedback completo
+            <ArrowRight className="size-4" />
+          </Button>
+        )}
       </div>
     </div>
   )

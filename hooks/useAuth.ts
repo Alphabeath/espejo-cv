@@ -23,8 +23,15 @@ type RegisterCredentials = AuthCredentials & {
 
 const authUserQueryKey = ["auth", "user"] as const
 
+const AUTH_ERROR_MESSAGES = {
+	login: "No pudimos iniciar sesión en este momento. Verifica tus credenciales e inténtalo nuevamente.",
+	register: "No pudimos crear tu cuenta en este momento. Intenta nuevamente.",
+	logout: "No pudimos cerrar tu sesión en este momento. Intenta nuevamente.",
+	default: "Ocurrió un problema con la autenticación. Intenta nuevamente.",
+} as const
+
 function getErrorMessage(error: unknown, fallback: string) {
-	return error instanceof Error ? error.message : fallback
+	return error ? fallback : ""
 }
 
 export function useAuth() {
@@ -75,14 +82,19 @@ export function useAuth() {
 		isRegistering: registerMutation.isPending,
 		isLoggingOut: logoutMutation.isPending,
 		error:
-			getErrorMessage(userQuery.error, "") ||
-			getErrorMessage(loginMutation.error, "") ||
-			getErrorMessage(registerMutation.error, "") ||
-			getErrorMessage(logoutMutation.error, "") ||
+			getErrorMessage(userQuery.error, AUTH_ERROR_MESSAGES.default) ||
+			getErrorMessage(loginMutation.error, AUTH_ERROR_MESSAGES.login) ||
+			getErrorMessage(registerMutation.error, AUTH_ERROR_MESSAGES.register) ||
+			getErrorMessage(logoutMutation.error, AUTH_ERROR_MESSAGES.logout) ||
 			null,
 		login: async (credentials: AuthCredentials) => loginMutation.mutateAsync(credentials),
 		register: async (credentials: RegisterCredentials) => registerMutation.mutateAsync(credentials),
 		logout: async () => logoutMutation.mutateAsync(),
+		clearError: () => {
+			loginMutation.reset()
+			registerMutation.reset()
+			logoutMutation.reset()
+		},
 		refreshUser: async () => {
 			await queryClient.invalidateQueries({ queryKey: authUserQueryKey })
 			return userQuery.refetch()

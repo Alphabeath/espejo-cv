@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -16,6 +16,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { useToast } from "@/components/ui/toast"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
@@ -23,12 +24,36 @@ import { useAuth } from "@/hooks/useAuth"
 
 export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
   const router = useRouter()
-  const { register, isLoading, error } = useAuth()
+  const { toast } = useToast()
+  const { register, isLoading, error, clearError } = useAuth()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [formError, setFormError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!error) {
+      return
+    }
+
+    toast({
+      title: "No pudimos crear tu cuenta",
+      description: error,
+    })
+    clearError()
+  }, [clearError, error, toast])
+
+  useEffect(() => {
+    if (!formError) {
+      return
+    }
+
+    toast({
+      title: "Revisa los datos del formulario",
+      description: formError,
+    })
+  }, [formError, toast])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -121,11 +146,6 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                 <FieldDescription className="px-6 text-center text-ec-on-surface-variant">
                   ¿Ya tienes una cuenta? <Link href="/auth/login">Inicia sesión</Link>
                 </FieldDescription>
-                {formError || error ? (
-                  <FieldDescription className="px-6 text-center text-ec-error">
-                    {formError || error}
-                  </FieldDescription>
-                ) : null}
               </Field>
             </FieldGroup>
           </FieldGroup>
