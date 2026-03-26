@@ -99,6 +99,33 @@ export type UserFeedbackSummary = {
   recentHistory: FeedbackHistoryEntry[]
 }
 
+export type SessionTurnDetail = {
+  turnIndex: number
+  question: string
+  answer: string
+  score: number
+  feedback: string
+}
+
+export type FeedbackItemParsed = {
+  label: string
+  description: string
+}
+
+export type SessionDetail = {
+  sessionId: string
+  jobPosition: string
+  date: string
+  overallScore: number
+  summary: string
+  confidence: number
+  strengths: FeedbackItemParsed[]
+  gaps: FeedbackItemParsed[]
+  recommendations: FeedbackItemParsed[]
+  turns: SessionTurnDetail[]
+  totalQuestions: number
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function getLoadedRelation<T>(value?: T | string | null) {
@@ -331,3 +358,100 @@ export async function getUserFeedbackSummary(): Promise<UserFeedbackSummary> {
     recentHistory,
   }
 }
+
+// ─── Session detail (read-only, for detail page) ────────────────────────────
+
+function safeParse(value?: string | null): FeedbackItemParsed[] {
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+export async function getSessionDetail(
+  sessionId: string,
+): Promise<SessionDetail> {
+  const { account, tables } = getServices()
+  const user = await account.get()
+
+  const session = await tables.getRow<CvSessionRow>({
+    databaseId: DATABASE_ID,
+    tableId: CV_SESSIONS_COLLECTION_ID,
+    rowId: sessionId,
+  })
+
+  if (session.userId !== user.$id) {
+    throw new Error("No tienes acceso a esta sesión.")
+  }
+
+  // Resolve job offer
+  const loadedJobOffer = getLoadedRelation(session.jobOffer)
+  const jobOfferId =
+    loadedJobOffer?.$id ??
+    (typeof session.jobOffer === "string" ? session.jobOffer : null)
+
+  let jobPosition = "Sesión de práctica"
+
+  if (jobOfferId) {
+    const jobOffer = await tables.getRow<JobOfferRow>({
+      databaseId: DATABASE_ID,
+      tableId: JOB_OFFERS_COLLECTION_ID,
+      rowId: jobOfferId,
+    })
+    jobPosition = jobOffer.title ?? jobOffer.normalizedText ?? jobPosition
+  }
+
+  // Load report
+  const report = await getExistingReport(sessionId)
+
+  if (!report) {
+    throw new Error("Esta sesión aún no tiene un reporte generado.")
+  }
+
+  // Load turns with feedback
+  const turnsResponse = await tables.listRows<InterviewTurnRow>({
+    databaseId: DATABASE_ID,
+    tableId: INTERVIEW_TURNS_COLLECTION_ID,
+    queries: [
+      Query.equal("cvSession", sessionId),
+      Query.orderAsc("turnIndex"),
+      Query.select([
+        "$id",
+        "turnIndex",
+        "question",
+        "answer",
+        "score",
+        "feedback",
+        "status",
+      ]),
+    ],
+  })
+
+  const turns: SessionTurnDetail[] = turnsResponse.rows
+    .filter((t) => t.answer && t.answer.trim().length > 0)
+    .map((t) => ({
+      turnIndex: t.turnIndex,
+      question: t.question,
+      answer: t.answer!,
+      score: t.score ?? 0,
+      feedback: t.feedback ?? "",
+    }))
+
+  return {
+    sessionId,
+    jobPosition,
+    date: formatDate(session.startedAt),
+    overallScore: report.overallScore,
+    summary: report.summary,
+    confidence: report.confidence ?? 0,
+    strengths: safeParse(report.strengths),
+    gaps: safeParse(report.gaps),
+    recommendations: safeParse(report.recommendations),
+    turns,
+    totalQuestions: turnsResponse.rows.length,
+  }
+}
+

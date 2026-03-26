@@ -108,14 +108,14 @@ function HistoryCard({ entry }: { entry: HistoryEntry }) {
         "hover:bg-ec-surface-container cursor-pointer",
       )}
       onClick={() =>
-        router.push(`/dashboard/practice?sessionId=${entry.sessionId}`)
+        router.push(`/dashboard/feedback/${entry.sessionId}`)
       }
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           router.push(
-            `/dashboard/practice?sessionId=${entry.sessionId}`,
+            `/dashboard/feedback/${entry.sessionId}`,
           )
         }
       }}
