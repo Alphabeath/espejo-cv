@@ -17,42 +17,14 @@ import {
   continueInterviewSession,
   startInterviewSession,
 } from "@/services/interview.service"
+import {
+  getSessionFeedbackData,
+  saveReport,
+  updateTurnFeedback,
+} from "@/services/feedback.service"
 
 // ─── Step machine ────────────────────────────────────────────────────────────
 type Step = "upload" | "interview" | "results"
-
-const MOCK_RESULT: PracticeResult = {
-  score: 74,
-  jobPosition: "",
-  totalQuestions: 0,
-  duration: 312,
-  summary:
-    "Demostraste sólidos conocimientos técnicos y buena comunicación. Tu mayor área de crecimiento es estructurar las respuestas con el método STAR para mayor claridad y persuasión ante el entrevistador.",
-  feedback: [
-    {
-      label: "Claridad técnica",
-      description: "Explicaste conceptos complejos de forma accesible y coherente.",
-      type: "strength",
-    },
-    {
-      label: "Escucha activa",
-      description: "Respondiste con precisión a lo preguntado sin desviarte del tema.",
-      type: "strength",
-    },
-    {
-      label: "Estructura STAR",
-      description:
-        "Algunas respuestas carecían de contexto o resultado explícito. Prueba Situación → Tarea → Acción → Resultado.",
-      type: "improvement",
-    },
-    {
-      label: "Preguntas al entrevistador",
-      description:
-        "No formulaste preguntas de retorno. Esto puede percibirse como bajo interés en la empresa.",
-      type: "improvement",
-    },
-  ],
-}
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function PracticePage() {
@@ -240,8 +212,85 @@ export default function PracticePage() {
         await completeInterviewSession(sessionId)
       }
 
-      await new Promise((r) => setTimeout(r, 1800))
-      setResult({ ...MOCK_RESULT, jobPosition: displayJobTitle, totalQuestions: questions.length })
+      if (!sessionId) {
+        throw new Error("No se encontró una sesión activa.")
+      }
+
+      // 1. Read session data client-side (browser Appwrite session)
+      const sessionData = await getSessionFeedbackData(sessionId)
+
+      if (sessionData.turns.length === 0) {
+        throw new Error("La sesión no tiene respuestas para evaluar.")
+      }
+
+      // 2. Send raw data to API for AI generation (server-side only)
+      const feedbackResponse = await fetch("/api/ai/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cvText: sessionData.cvText,
+          jobPosition: sessionData.jobPosition,
+          turns: sessionData.turns.map((t) => ({
+            turnIndex: t.turnIndex,
+            question: t.question,
+            answer: t.answer,
+          })),
+        }),
+      })
+
+      const feedbackData = await feedbackResponse.json()
+
+      if (!feedbackResponse.ok) {
+        throw new Error(feedbackData.error || "No se pudo generar la evaluación.")
+      }
+
+      // 3. Persist report and per-turn feedback client-side
+      await saveReport(sessionId, sessionData.userId, {
+        overallScore: feedbackData.overallScore,
+        summary: feedbackData.summary,
+        strengths: JSON.stringify(feedbackData.strengths),
+        gaps: JSON.stringify(feedbackData.gaps),
+        recommendations: JSON.stringify(feedbackData.recommendations),
+        confidence: feedbackData.confidence,
+      })
+
+      await Promise.all(
+        (feedbackData.turnScores ?? []).map(
+          (ts: { turnIndex: number; score: number; feedback: string }) => {
+            const matchingTurn = sessionData.turns.find(
+              (t) => t.turnIndex === ts.turnIndex,
+            )
+            if (!matchingTurn) return Promise.resolve()
+            return updateTurnFeedback(matchingTurn.id, ts.score, ts.feedback)
+          },
+        ),
+      )
+
+      // Map AI feedback to PracticeResult shape
+      const strengths = (feedbackData.strengths ?? []).map(
+        (s: { label: string; description: string }) => ({
+          label: s.label,
+          description: s.description,
+          type: "strength" as const,
+        }),
+      )
+
+      const improvements = (feedbackData.gaps ?? []).map(
+        (g: { label: string; description: string }) => ({
+          label: g.label,
+          description: g.description,
+          type: "improvement" as const,
+        }),
+      )
+
+      setResult({
+        score: feedbackData.overallScore ?? 0,
+        jobPosition: displayJobTitle,
+        totalQuestions: questions.length,
+        duration: 0,
+        summary: feedbackData.summary ?? "",
+        feedback: [...strengths, ...improvements],
+      })
       setStep("results")
     } catch (finishError) {
       setPageError(
@@ -327,6 +376,7 @@ export default function PracticePage() {
           result={result}
           onNewPractice={handleNewPractice}
           onGoToDashboard={() => router.push("/dashboard")}
+          onGoToFeedback={() => router.push("/dashboard/feedback")}
         />
       )}
     </main>

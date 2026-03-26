@@ -218,3 +218,144 @@ export async function transcribeInterviewAudio({
 		})),
 	}
 }
+
+// ─── Interview Feedback Generation ──────────────────────────────────────────
+
+export type InterviewTurnFeedback = {
+	turnIndex: number
+	score: number
+	feedback: string
+}
+
+export type FeedbackItem = {
+	label: string
+	description: string
+}
+
+export type InterviewFeedback = {
+	overallScore: number
+	summary: string
+	confidence: number
+	strengths: FeedbackItem[]
+	gaps: FeedbackItem[]
+	recommendations: FeedbackItem[]
+	turnScores: InterviewTurnFeedback[]
+}
+
+const feedbackItemSchema = z.object({
+	label: z.string().min(1).max(80),
+	description: z.string().min(1).max(300),
+})
+
+const interviewFeedbackSchema = z.object({
+	overallScore: z.number().int().min(0).max(100),
+	summary: z.string().min(10).max(800),
+	confidence: z.number().int().min(0).max(100),
+	strengths: z.array(feedbackItemSchema).min(1).max(5),
+	gaps: z.array(feedbackItemSchema).min(1).max(5),
+	recommendations: z.array(feedbackItemSchema).min(1).max(5),
+	turnScores: z
+		.array(
+			z.object({
+				turnIndex: z.number().int().min(0),
+				score: z.number().int().min(0).max(100),
+				feedback: z.string().min(1).max(400),
+			}),
+		)
+		.min(1),
+})
+
+export type InterviewTurnInput = {
+	turnIndex: number
+	question: string
+	answer: string
+}
+
+export async function generateInterviewFeedback({
+	cvText,
+	jobPosition,
+	turns,
+}: {
+	cvText: string
+	jobPosition: string
+	turns: InterviewTurnInput[]
+}): Promise<InterviewFeedback> {
+	ensureEnv("GROQ_API_KEY")
+
+	if (turns.length === 0) {
+		throw new Error("No hay respuestas para evaluar.")
+	}
+
+	const turnsBlock = turns
+		.map(
+			(t, i) =>
+				`Pregunta ${i + 1}: ${t.question}\nRespuesta: ${t.answer || "(sin respuesta)"}`,
+		)
+		.join("\n\n")
+
+	const { object } = await generateObject({
+		model: groq("moonshotai/kimi-k2-instruct-0905"),
+		schema: interviewFeedbackSchema,
+		schemaName: "interview_feedback",
+		schemaDescription:
+			"Evaluación completa de una entrevista de práctica, con puntaje global, fortalezas, brechas, recomendaciones y evaluación por pregunta, todo en español.",
+		prompt: [
+			"Actúa como un evaluador de entrevistas de trabajo con experiencia en selección de personal y evaluación de competencias.",
+			"Analiza las respuestas de esta entrevista de práctica comparándolas con el CV del candidato y los requisitos del puesto.",
+			"",
+			"Criterios de evaluación:",
+			"- Relevancia de la respuesta a la pregunta formulada",
+			"- Estructura y claridad (método STAR u otra estructura coherente)",
+			"- Profundidad técnica y ejemplos concretos",
+			"- Ajuste cultural y comunicación profesional",
+			"- Coherencia con la experiencia declarada en el CV",
+			"",
+			"Devuelve:",
+			"- overallScore: puntaje global 0–100",
+			"- summary: resumen general del desempeño en 2-3 oraciones",
+			"- confidence: confianza de tu análisis 0–100",
+			"- strengths: de 2 a 4 fortalezas detectadas, cada una con label corto y descripción",
+			"- gaps: de 1 a 4 brechas o áreas de mejora, cada una con label y descripción",
+			"- recommendations: de 2 a 4 recomendaciones accionables, cada una con label y descripción",
+			"- turnScores: una evaluación por cada pregunta respondida con turnIndex (empezando en 0), score 0–100 y feedback breve",
+			"",
+			"Todo el output debe estar en español.",
+			"",
+			`Puesto: ${jobPosition}`,
+			"",
+			`CV del candidato: ${truncateText(cvText, MAX_CV_TEXT_LENGTH)}`,
+			"",
+			`Entrevista (${turns.length} preguntas):`,
+			turnsBlock,
+		].join("\n"),
+		providerOptions: {
+			groq: {
+				structuredOutputs: true,
+				strictJsonSchema: true,
+			},
+		},
+	})
+
+	return {
+		overallScore: object.overallScore,
+		summary: normalizeWhitespace(object.summary),
+		confidence: object.confidence,
+		strengths: object.strengths.map((s) => ({
+			label: normalizeWhitespace(s.label),
+			description: normalizeWhitespace(s.description),
+		})),
+		gaps: object.gaps.map((g) => ({
+			label: normalizeWhitespace(g.label),
+			description: normalizeWhitespace(g.description),
+		})),
+		recommendations: object.recommendations.map((r) => ({
+			label: normalizeWhitespace(r.label),
+			description: normalizeWhitespace(r.description),
+		})),
+		turnScores: object.turnScores.map((t) => ({
+			turnIndex: t.turnIndex,
+			score: t.score,
+			feedback: normalizeWhitespace(t.feedback),
+		})),
+	}
+}
