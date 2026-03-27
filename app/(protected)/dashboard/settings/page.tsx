@@ -21,13 +21,14 @@ import {
   deleteCvFile,
   getCvDownloadUrl,
 } from "@/services/settings.service"
-import { getUserCvsQueryKey } from "@/hooks/useUserCvs"
+import { useUserCvs, getUserCvsQueryKey } from "@/hooks/useUserCvs"
 import type { UserCvFile } from "@/services/interview.service"
 
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth()
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const { cvList: verifiedCvList, refreshCvs } = useUserCvs()
 
   const [profile, setProfile] = useState({
     name: "",
@@ -36,9 +37,8 @@ export default function SettingsPage() {
     avatarUrl: "",
   })
 
+  // Local editable copy derived from the verified list from Storage
   const [cvList, setCvList] = useState<CvDocument[]>([])
-
-
 
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
@@ -59,7 +59,7 @@ export default function SettingsPage() {
     void queryClient.invalidateQueries({ queryKey })
   }
 
-  // Sync state with Appwrite session
+  // Sync profile state with Appwrite session
   useEffect(() => {
     if (user) {
       const prefs = user.prefs as Record<string, any>
@@ -69,20 +69,15 @@ export default function SettingsPage() {
         title: prefs?.title || "",
         avatarUrl: prefs?.avatarUrl || "",
       })
-
-      try {
-        if (prefs?.cvList) {
-          setCvList(JSON.parse(prefs.cvList))
-        }
-      } catch (e) {
-        setCvList([])
-      }
-
-
       setTwoFactorEnabled(user.mfa ?? false)
       setIsDirty(false)
     }
   }, [user])
+
+  // Sync local CV list from the verified Storage list (auto-removes orphans)
+  useEffect(() => {
+    setCvList(verifiedCvList)
+  }, [verifiedCvList])
 
   function handleProfileChange(updated: typeof profile) {
     setProfile(updated)
@@ -116,6 +111,7 @@ export default function SettingsPage() {
       })
       
       await refreshUser()
+      await refreshCvs()
     } catch (error) {
       console.error("Failed to upload CV", error)
       toast({
@@ -145,6 +141,7 @@ export default function SettingsPage() {
         cvList: JSON.stringify(nextList),
       })
       await refreshUser()
+      await refreshCvs()
     } catch (error) {
       console.error("Failed to delete CV", error)
       toast({

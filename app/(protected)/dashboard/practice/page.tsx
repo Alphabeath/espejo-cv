@@ -23,6 +23,7 @@ import {
   saveReport,
   updateTurnFeedback,
 } from "@/services/feedback.service"
+import { useUserCvs } from "@/hooks/useUserCvs"
 
 // ─── Step machine ────────────────────────────────────────────────────────────
 type Step = "upload" | "interview" | "results"
@@ -43,6 +44,7 @@ export default function PracticePage() {
     transcribeAudio,
     reset: resetAI,
   } = useAI()
+  const { refreshCvs } = useUserCvs()
   const requestedSessionId = searchParams.get("sessionId")
 
   const [step, setStep] = useState<Step>("upload")
@@ -143,16 +145,22 @@ export default function PracticePage() {
   // ── Handlers ────────────────────────────────────────────────────────────
 
   /** Step 1 → 2: user submits CV + job position + interview type */
-  const handleStart = useCallback(async (cvFile: File, position: string, type: InterviewType) => {
+  const handleStart = useCallback(async (cvFile: File, position: string, existingCvId?: string) => {
     setPageError(null)
-    const plan = await createInterviewPlan(cvFile, position, type)
+    const plan = await createInterviewPlan(cvFile, position, 'structured' as InterviewType)
 
     // Persiste la sesión, la oferta y los turnos en Appwrite
     const { sessionId: newSessionId } = await startInterviewSession({
       cvFile,
+      existingCvId,
       jobPosition: position,
       plan,
     })
+
+    if (!existingCvId) {
+      // Si fue un CV nuevo, refrescamos la lista de CVs guardados para que aparezca sin recargar
+      void refreshCvs()
+    }
 
     setSessionId(newSessionId)
     setDisplayJobTitle(plan.roleSummary)

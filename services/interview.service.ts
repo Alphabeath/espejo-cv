@@ -29,7 +29,6 @@ type JobOfferRow = Models.Row & {
 
 type CvSessionRow = Models.Row & {
   userId: string
-  cvFileId: string
   cvText: string
   jobOffer?: JobOfferRow | string | null
   status: InterviewSessionStatus
@@ -119,14 +118,14 @@ function getLoadedRelation<T>(value?: T | string | null) {
 export async function listCurrentUserCvFiles(): Promise<UserCvFile[]> {
   const { account, storage } = getServices()
   const user = await account.get()
-  const preferredCvIds = parsePreferredCvIds((user.prefs as Record<string, unknown> | undefined)?.cvList)
+  const rawPrefs = user.prefs as Record<string, unknown> | undefined
+  const preferredCvIds = parsePreferredCvIds(rawPrefs?.cvList)
 
   if (preferredCvIds.length === 0) {
     return []
   }
 
-  const preferredIdsSet = new Set(preferredCvIds)
-  const ownedFiles = await Promise.all(
+  const results = await Promise.all(
     preferredCvIds.map(async (fileId) => {
       try {
         const file = await storage.getFile({
@@ -137,43 +136,54 @@ export async function listCurrentUserCvFiles(): Promise<UserCvFile[]> {
         const isOwnedByUser = file.$permissions.some((permission) => permission.includes(`user:${user.$id}`))
 
         if (!isOwnedByUser || file.mimeType !== "application/pdf") {
-          return null
+          return { fileId, file: null, orphaned: true }
         }
 
-        return file
+        return { fileId, file, orphaned: false }
       } catch {
-        return null
+        return { fileId, file: null, orphaned: true }
       }
     }),
   )
 
-  const sortedFiles = ownedFiles
-    .filter((file): file is Models.File => file !== null)
+  // Auto-clean orphaned IDs from prefs so stale references don't persist
+  const orphanedIds = new Set(results.filter((r) => r.orphaned).map((r) => r.fileId))
+  if (orphanedIds.size > 0) {
+    try {
+      const rawCvList = rawPrefs?.cvList
+      const currentList = Array.isArray(rawCvList)
+        ? rawCvList
+        : typeof rawCvList === "string"
+          ? (JSON.parse(rawCvList) as unknown[])
+          : []
+      const cleanedList = (currentList as { id?: unknown }[]).filter(
+        (item) => typeof item?.id === "string" && !orphanedIds.has(item.id),
+      )
+      await account.updatePrefs({
+        ...rawPrefs,
+        cvList: JSON.stringify(cleanedList),
+      })
+    } catch {
+      // Best-effort cleanup; ignore errors
+    }
+  }
+
+  const validFiles = results
+    .filter((r): r is { fileId: string; file: Models.File; orphaned: false } => r.file !== null)
     .sort((left, right) => {
-      const leftPreferredIndex = preferredCvIds.indexOf(left.$id)
-      const rightPreferredIndex = preferredCvIds.indexOf(right.$id)
-
-      if (leftPreferredIndex !== -1 || rightPreferredIndex !== -1) {
-        if (leftPreferredIndex === -1) {
-          return 1
-        }
-
-        if (rightPreferredIndex === -1) {
-          return -1
-        }
-
-        return leftPreferredIndex - rightPreferredIndex
-      }
-
-      return new Date(right.$createdAt).getTime() - new Date(left.$createdAt).getTime()
+      const leftIndex = preferredCvIds.indexOf(left.fileId)
+      const rightIndex = preferredCvIds.indexOf(right.fileId)
+      return leftIndex - rightIndex
     })
 
-  return sortedFiles.map((file, index) => ({
-    id: file.$id,
-    name: file.name,
-    uploadedAt: formatCvUploadedAt(file.$createdAt),
-    isPrimary: preferredIdsSet.size > 0 ? preferredIdsSet.has(file.$id) && preferredCvIds[0] === file.$id : index === 0,
-    sizeInBytes: file.sizeOriginal,
+  const primaryId = preferredCvIds.find((id) => !orphanedIds.has(id))
+
+  return validFiles.map((r) => ({
+    id: r.file.$id,
+    name: r.file.name,
+    uploadedAt: formatCvUploadedAt(r.file.$createdAt),
+    isPrimary: r.file.$id === primaryId,
+    sizeInBytes: r.file.sizeOriginal,
   }))
 }
 
@@ -238,10 +248,12 @@ async function listInterviewTurns(sessionId: string) {
  */
 export async function startInterviewSession({
   cvFile,
+  existingCvId,
   jobPosition,
   plan,
 }: {
   cvFile: File
+  existingCvId?: string
   jobPosition: string
   plan: InterviewPlan
 }): Promise<StartInterviewResult> {
@@ -257,15 +269,48 @@ export async function startInterviewSession({
     Permission.delete(Role.user(userId)),
   ]
 
-  // 1. Subir CV al bucket de Storage
-  const uploadedFile = await storage.createFile(
-    CV_FILES_BUCKET_ID,
-    ID.unique(),
-    cvFile,
-    userPermissions,
-  )
+  let cvFileId = existingCvId
 
-  const cvFileId = uploadedFile.$id
+  if (!cvFileId) {
+    // 1. Subir CV al bucket de Storage
+    const uploadedFile = await storage.createFile(
+      CV_FILES_BUCKET_ID,
+      ID.unique(),
+      cvFile,
+      userPermissions,
+    )
+    cvFileId = uploadedFile.$id
+
+    // Añadir el nuevo CV a user.prefs.cvList para que aparezca en Settings
+    try {
+      const rawPrefs = user.prefs as Record<string, unknown> | undefined
+      const rawCvList = rawPrefs?.cvList
+      const currentList: unknown[] = Array.isArray(rawCvList)
+        ? rawCvList
+        : typeof rawCvList === "string"
+          ? (JSON.parse(rawCvList) as unknown[])
+          : []
+          
+      const newCv = {
+        id: cvFileId,
+        name: cvFile.name,
+        uploadedAt: `Subido el ${new Date().toLocaleDateString("es-ES", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })}`,
+        isPrimary: currentList.length === 0,
+      }
+      
+      await account.updatePrefs({
+        ...rawPrefs,
+        cvList: JSON.stringify([...currentList, newCv]),
+      })
+    } catch {
+      // Si falla actualizar preferencias, el CV estará en el bucket pero no en la lista. 
+      // Por ahora no bloqueamos el flujo de la entrevista por esto.
+    }
+  }
 
   // 2. Crear la fila job_offer con datos de la oferta y el plan normalizado
   const jobOffer = await tables.createRow({
