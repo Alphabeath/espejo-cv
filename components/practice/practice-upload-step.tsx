@@ -289,12 +289,6 @@ export function PracticeUploadStep({
                     Cargando el CV seleccionado…
                   </div>
                 )}
-
-                {selectedStoredCv && cvFile && !isResolvingCv && (
-                  <div className="rounded-xl border border-ec-primary/20 bg-ec-primary-container/25 px-3 py-2 text-xs text-ec-on-surface">
-                    Usarás <span className="font-semibold">{selectedStoredCv.name}</span> para esta práctica.
-                  </div>
-                )}
               </div>
             ) : cvFile ? (
               <div className="group relative flex min-h-80 flex-col items-center justify-center gap-4 rounded-2xl border border-ec-outline-variant/10 bg-ec-surface-container-lowest px-5 py-8 animate-fade-in shadow-sm">
@@ -360,6 +354,12 @@ export function PracticeUploadStep({
                   }}
                   aria-label="Seleccionar archivo PDF"
                 />
+              </div>
+            )}
+
+            {shouldShowStoredCvList && selectedStoredCv && cvFile && !isResolvingCv && (
+              <div className="rounded-xl border border-ec-primary/20 bg-ec-primary-container/25 px-3 py-2 text-xs text-ec-on-surface">
+                Usarás <span className="font-semibold">{selectedStoredCv.name}</span> para esta práctica.
               </div>
             )}
           </div>
