@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -20,10 +21,13 @@ import {
   deleteCvFile,
   getCvDownloadUrl,
 } from "@/services/settings.service"
+import { getUserCvsQueryKey } from "@/hooks/useUserCvs"
+import type { UserCvFile } from "@/services/interview.service"
 
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const [profile, setProfile] = useState({
     name: "",
@@ -40,6 +44,20 @@ export default function SettingsPage() {
   const [isDirty, setIsDirty] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+
+  function syncPracticeCvCache(nextList: CvDocument[]) {
+    const queryKey = getUserCvsQueryKey(user?.$id)
+    const mappedList: UserCvFile[] = nextList.map((cv) => ({
+      id: cv.id,
+      name: cv.name,
+      uploadedAt: cv.uploadedAt,
+      isPrimary: cv.isPrimary,
+      sizeInBytes: 0,
+    }))
+
+    queryClient.setQueryData(queryKey, mappedList)
+    void queryClient.invalidateQueries({ queryKey })
+  }
 
   // Sync state with Appwrite session
   useEffect(() => {
@@ -89,6 +107,7 @@ export default function SettingsPage() {
       
       const nextList = [...cvList, newCv]
       setCvList(nextList)
+      syncPracticeCvCache(nextList)
       
       // Persist list to preferences immediately since the file is uploaded
       await updatePreferences({
@@ -119,6 +138,7 @@ export default function SettingsPage() {
       }
       
       setCvList(nextList)
+      syncPracticeCvCache(nextList)
       await deleteCvFile(id)
       await updatePreferences({
         ...(user?.prefs || {}),
@@ -137,6 +157,7 @@ export default function SettingsPage() {
   async function handleSetPrimaryCv(id: string) {
     const nextList = cvList.map((cv) => ({ ...cv, isPrimary: cv.id === id }))
     setCvList(nextList)
+    syncPracticeCvCache(nextList)
     try {
       await updatePreferences({
         ...(user?.prefs || {}),

@@ -54,7 +54,7 @@ export function PracticeUploadStep({
   const [selectionError, setSelectionError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const isMountedRef = useRef(true)
-  const storedCvIdsKey = storedCvList.map((cv) => cv.id).join("|")
+  const effectiveCvSource: "stored" | "upload" = hasStoredCvs ? cvSource : "upload"
 
   const canStart = cvFile !== null && jobPosition.trim().length > 0 && !isResolvingCv
 
@@ -67,12 +67,33 @@ export function PracticeUploadStep({
   }, [])
 
   useEffect(() => {
-    setCvSource(hasStoredCvs ? "stored" : "upload")
-    setSelectedStoredCvId(null)
-    setCvFile(null)
-    setSelectionError(null)
-    setIsResolvingCv(false)
-  }, [hasStoredCvs, storedCvIdsKey])
+    if (effectiveCvSource !== "stored" || isLoadingStoredCvs || isResolvingCv) {
+      return
+    }
+
+    if (storedCvList.length === 0) {
+      return
+    }
+
+    const primaryCv = storedCvList.find((cv) => cv.isPrimary) ?? storedCvList[0]
+
+    if (!primaryCv) {
+      return
+    }
+
+    if (selectedStoredCvId === primaryCv.id && cvFile) {
+      return
+    }
+
+    void resolveStoredCv(primaryCv)
+  }, [
+    effectiveCvSource,
+    isLoadingStoredCvs,
+    isResolvingCv,
+    selectedStoredCvId,
+    cvFile,
+    storedCvList,
+  ])
 
   async function resolveStoredCv(cv: StoredCvDocument) {
     setSelectionError(null)
@@ -121,6 +142,10 @@ export function PracticeUploadStep({
   }
 
   function handleSwitchToStored() {
+    if (!hasStoredCvs) {
+      return
+    }
+
     setCvSource("stored")
     setCvFile(null)
     setSelectionError(null)
@@ -143,7 +168,7 @@ export function PracticeUploadStep({
     handleFileChange(file)
   }
 
-  const shouldShowStoredCvList = cvSource === "stored" && (hasStoredCvs || isLoadingStoredCvs)
+  const shouldShowStoredCvList = effectiveCvSource === "stored" && (hasStoredCvs || isLoadingStoredCvs)
   const selectedStoredCv = storedCvList.find((cv) => cv.id === selectedStoredCvId) ?? null
   const helperMessage = !cvFile
     ? shouldShowStoredCvList

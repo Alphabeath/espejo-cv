@@ -81,7 +81,7 @@ function parsePreferredCvIds(rawValue: unknown) {
       return []
     }
 
-    return parsed
+    const orderedIds = parsed
       .filter((cv): cv is { id: string; isPrimary?: boolean } => {
         if (!cv || typeof cv !== "object") {
           return false
@@ -92,6 +92,8 @@ function parsePreferredCvIds(rawValue: unknown) {
       })
       .sort((left, right) => Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary)))
       .map((cv) => cv.id)
+
+    return [...new Set(orderedIds)]
   } catch {
     return []
   }
@@ -105,54 +107,6 @@ function formatCvUploadedAt(timestamp: string) {
   })}`
 }
 
-async function listOwnedSessionCvFileIds(userId: string) {
-  const { tables } = getServices()
-  const collectedIds = new Set<string>()
-  let cursorAfter: string | null = null
-
-  while (true) {
-    const response: Models.RowList<CvSessionRow> = await tables.listRows<CvSessionRow>({
-      databaseId: DATABASE_ID,
-      tableId: CV_SESSIONS_COLLECTION_ID,
-      queries: [
-        Query.equal("userId", userId),
-        Query.orderAsc("$id"),
-        Query.limit(100),
-        Query.select(["$id", "cvFileId"]),
-        ...(cursorAfter ? [Query.cursorAfter(cursorAfter)] : []),
-      ],
-    })
-
-    for (const row of response.rows) {
-      if (typeof row.cvFileId === "string" && row.cvFileId.length > 0) {
-        collectedIds.add(row.cvFileId)
-      }
-    }
-
-    if (response.rows.length < 100) {
-      break
-    }
-
-    cursorAfter = response.rows[response.rows.length - 1]?.$id ?? null
-
-    if (!cursorAfter) {
-      break
-    }
-  }
-
-  return [...collectedIds]
-}
-
-async function listAssociatedCvFileIdsForUser(user: Models.User<Models.Preferences>) {
-  const preferredCvIds = parsePreferredCvIds((user.prefs as Record<string, unknown> | undefined)?.cvList)
-  const sessionCvIds = await listOwnedSessionCvFileIds(user.$id)
-
-  return {
-    preferredCvIds,
-    associatedCvIds: [...new Set([...preferredCvIds, ...sessionCvIds])],
-  }
-}
-
 function getLoadedRelation<T>(value?: T | string | null) {
   if (!value || typeof value === "string") {
     return null
@@ -164,15 +118,15 @@ function getLoadedRelation<T>(value?: T | string | null) {
 export async function listCurrentUserCvFiles(): Promise<UserCvFile[]> {
   const { account, storage } = getServices()
   const user = await account.get()
-  const { preferredCvIds, associatedCvIds } = await listAssociatedCvFileIdsForUser(user)
+  const preferredCvIds = parsePreferredCvIds((user.prefs as Record<string, unknown> | undefined)?.cvList)
 
-  if (associatedCvIds.length === 0) {
+  if (preferredCvIds.length === 0) {
     return []
   }
 
   const preferredIdsSet = new Set(preferredCvIds)
   const ownedFiles = await Promise.all(
-    associatedCvIds.map(async (fileId) => {
+    preferredCvIds.map(async (fileId) => {
       try {
         const file = await storage.getFile({
           bucketId: CV_FILES_BUCKET_ID,
