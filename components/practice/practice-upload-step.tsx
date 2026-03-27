@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { motion } from "motion/react"
 import { FileText, Upload, X, Briefcase, ArrowRight, Loader2, CheckCircle2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -10,9 +11,10 @@ import { useToast } from "@/components/ui/toast"
 import { cn } from "@/lib/utils"
 import { useUserCvs } from "@/hooks/useUserCvs"
 import { getCvDownloadUrl } from "@/services/settings.service"
+import type { InterviewType } from "@/lib/ai-types"
 
 interface PracticeUploadStepProps {
-  onStart: (cvFile: File, jobPosition: string) => void
+  onStart: (cvFile: File, jobPosition: string, existingCvId?: string, interviewType?: InterviewType) => void
   isLoading?: boolean
 }
 
@@ -44,6 +46,7 @@ export function PracticeUploadStep({
   const hasStoredCvs = storedCvList.length > 0
   const [cvFile, setCvFile] = useState<File | null>(null)
   const [jobPosition, setJobPosition] = useState("")
+  const [interviewType, setInterviewType] = useState<InterviewType>("estructurada")
   const [isDragging, setIsDragging] = useState(false)
   const [cvSource, setCvSource] = useState<"stored" | "upload">("stored")
   const [selectedStoredCvId, setSelectedStoredCvId] = useState<string | null>(null)
@@ -378,7 +381,7 @@ export function PracticeUploadStep({
                 onChange={(e) => setJobPosition(e.target.value)}
                 placeholder="Ej: Desarrollador Frontend Senior en empresa fintech, trabajo remoto. Pega aquí la descripción del puesto si la tienes."
                 className={cn(
-                  "h-80 resize-none overflow-y-auto rounded-2xl pl-11 pt-3.5 text-sm leading-relaxed",
+                  "h-48 resize-none overflow-y-auto rounded-2xl pl-11 pt-3.5 text-sm leading-relaxed",
                   "bg-ec-surface-container-lowest focus:bg-ec-surface-container-lowest",
                   "shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]",
                   "border-transparent focus-visible:border-ec-primary/40 focus-visible:ring-0",
@@ -386,6 +389,43 @@ export function PracticeUploadStep({
                   "placeholder:text-ec-on-surface-variant/40 transition-all",
                 )}
               />
+            </div>
+            
+            {/* Interview type field */}
+            <div className="flex flex-col gap-3">
+              <Label className="text-sm font-semibold text-ec-on-surface">
+                Tipo de entrevista
+              </Label>
+              <div className="relative flex w-full max-w-sm rounded-[1.25rem] bg-ec-surface-container-low p-1.5 shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]">
+                {(["estructurada", "no-estructurada", "informal"] as const).map((type) => {
+                  const isSelected = interviewType === type
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setInterviewType(type)}
+                      className={cn(
+                        "relative z-10 w-full flex-1 rounded-full py-2.5 text-xs font-semibold capitalize transition-colors duration-300",
+                        isSelected ? "text-ec-on-primary-container" : "text-ec-on-surface-variant hover:text-ec-on-surface"
+                      )}
+                    >
+                      {isSelected && (
+                        <motion.div
+                          layoutId="active-interview-type"
+                          className="absolute inset-0 z-[-1] rounded-full bg-ec-primary-container shadow-sm"
+                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        />
+                      )}
+                      {type.replace("-", " ")}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-xs text-ec-on-surface-variant leading-relaxed min-h-[2.5rem]">
+                {interviewType === "estructurada" && "Preguntas predefinidas y metódicas. Basadas en competencias y tu CV."}
+                {interviewType === "no-estructurada" && "Conversación abierta, profunda y exploratoria."}
+                {interviewType === "informal" && "Tono relajado enfocado en tu actitud y alineación cultural."}
+              </p>
             </div>
           </div>
         </div>
@@ -400,7 +440,7 @@ export function PracticeUploadStep({
         <Button
           size="lg"
           disabled={!canStart || isLoading}
-          onClick={() => canStart && onStart(cvFile!, jobPosition.trim())}
+          onClick={() => canStart && onStart(cvFile!, jobPosition.trim(), selectedStoredCvId || undefined, interviewType)}
           className="h-10 w-full max-w-xs gap-2 rounded-lg px-6 text-sm font-semibold shadow-md shadow-ec-primary/20 transition-all hover:-translate-y-0.5"
         >
           {isLoading ? (

@@ -21,7 +21,7 @@ import {
   deleteCvFile,
   getCvDownloadUrl,
 } from "@/services/settings.service"
-import { getUserCvsQueryKey } from "@/hooks/useUserCvs"
+import { useUserCvs } from "@/hooks/useUserCvs"
 import type { UserCvFile } from "@/services/interview.service"
 
 export default function SettingsPage() {
@@ -36,28 +36,12 @@ export default function SettingsPage() {
     avatarUrl: "",
   })
 
-  const [cvList, setCvList] = useState<CvDocument[]>([])
-
-
+  const { cvList, isLoading: isLoadingCvs, refreshCvs } = useUserCvs()
 
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-
-  function syncPracticeCvCache(nextList: CvDocument[]) {
-    const queryKey = getUserCvsQueryKey(user?.$id)
-    const mappedList: UserCvFile[] = nextList.map((cv) => ({
-      id: cv.id,
-      name: cv.name,
-      uploadedAt: cv.uploadedAt,
-      isPrimary: cv.isPrimary,
-      sizeInBytes: 0,
-    }))
-
-    queryClient.setQueryData(queryKey, mappedList)
-    void queryClient.invalidateQueries({ queryKey })
-  }
 
   // Sync state with Appwrite session
   useEffect(() => {
@@ -70,13 +54,7 @@ export default function SettingsPage() {
         avatarUrl: prefs?.avatarUrl || "",
       })
 
-      try {
-        if (prefs?.cvList) {
-          setCvList(JSON.parse(prefs.cvList))
-        }
-      } catch (e) {
-        setCvList([])
-      }
+      // cvList ya no se parsea aquí, se usa el hook useUserCvs
 
 
       setTwoFactorEnabled(user.mfa ?? false)
@@ -94,7 +72,10 @@ export default function SettingsPage() {
     try {
       const uploadedFile = await uploadCvFile(file)
       
-      const newCv: CvDocument = {
+      const baseList = cvList.length > 0 ? cvList : []
+      const isFirstCv = baseList.length === 0
+      
+      const newCv = {
         id: uploadedFile.$id,
         name: file.name,
         uploadedAt: `Subido el ${new Date().toLocaleDateString("es-ES", {
@@ -102,12 +83,10 @@ export default function SettingsPage() {
           month: "short",
           year: "numeric",
         })}`,
-        isPrimary: cvList.length === 0,
+        isPrimary: isFirstCv,
       }
       
-      const nextList = [...cvList, newCv]
-      setCvList(nextList)
-      syncPracticeCvCache(nextList)
+      const nextList = [...baseList, newCv]
       
       // Persist list to preferences immediately since the file is uploaded
       await updatePreferences({
@@ -116,6 +95,7 @@ export default function SettingsPage() {
       })
       
       await refreshUser()
+      await refreshCvs()
     } catch (error) {
       console.error("Failed to upload CV", error)
       toast({
@@ -130,21 +110,20 @@ export default function SettingsPage() {
   async function handleDeleteCv(id: string) {
     try {
       // Optimistic delete
-      const nextList = cvList.filter((cv) => cv.id !== id)
+      const baseList = cvList.length > 0 ? cvList : []
+      const nextList = baseList.filter((cv) => cv.id !== id)
       
-      // Si el CV eliminado era el primary y quedan mas, marcamos el primero
-      if (cvList.find(cv => cv.id === id)?.isPrimary && nextList.length > 0) {
+      if (baseList.find(cv => cv.id === id)?.isPrimary && nextList.length > 0) {
           nextList[0].isPrimary = true
       }
       
-      setCvList(nextList)
-      syncPracticeCvCache(nextList)
       await deleteCvFile(id)
       await updatePreferences({
         ...(user?.prefs || {}),
         cvList: JSON.stringify(nextList),
       })
       await refreshUser()
+      await refreshCvs()
     } catch (error) {
       console.error("Failed to delete CV", error)
       toast({
@@ -155,15 +134,16 @@ export default function SettingsPage() {
   }
 
   async function handleSetPrimaryCv(id: string) {
-    const nextList = cvList.map((cv) => ({ ...cv, isPrimary: cv.id === id }))
-    setCvList(nextList)
-    syncPracticeCvCache(nextList)
+    const baseList = cvList.length > 0 ? cvList : []
+    const nextList = baseList.map((cv) => ({ ...cv, isPrimary: cv.id === id }))
+    
     try {
       await updatePreferences({
         ...(user?.prefs || {}),
         cvList: JSON.stringify(nextList),
       })
       await refreshUser()
+      await refreshCvs()
     } catch (error) {
       console.error("Failed to set primary CV", error)
       toast({

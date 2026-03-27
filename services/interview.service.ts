@@ -238,10 +238,12 @@ async function listInterviewTurns(sessionId: string) {
  */
 export async function startInterviewSession({
   cvFile,
+  existingCvId,
   jobPosition,
   plan,
 }: {
   cvFile: File
+  existingCvId?: string
   jobPosition: string
   plan: InterviewPlan
 }): Promise<StartInterviewResult> {
@@ -257,15 +259,54 @@ export async function startInterviewSession({
     Permission.delete(Role.user(userId)),
   ]
 
-  // 1. Subir CV al bucket de Storage
-  const uploadedFile = await storage.createFile(
-    CV_FILES_BUCKET_ID,
-    ID.unique(),
-    cvFile,
-    userPermissions,
-  )
+  let cvFileId = existingCvId
 
-  const cvFileId = uploadedFile.$id
+  if (!cvFileId) {
+    // 1. Subir CV al bucket de Storage
+    const uploadedFile = await storage.createFile(
+      CV_FILES_BUCKET_ID,
+      ID.unique(),
+      cvFile,
+      userPermissions,
+    )
+    cvFileId = uploadedFile.$id
+
+    // Añadir el nuevo CV a user.prefs.cvList para que aparezca en Settings
+    try {
+      const rawPrefs = user.prefs as Record<string, unknown> | undefined
+      const rawCvList = rawPrefs?.cvList
+      
+      let currentList: unknown[] = []
+      if (Array.isArray(rawCvList)) {
+        currentList = rawCvList
+      } else if (typeof rawCvList === "string" && rawCvList.trim() !== "") {
+        try {
+          currentList = JSON.parse(rawCvList) as unknown[]
+          if (!Array.isArray(currentList)) currentList = []
+        } catch {
+          console.warn("Could not parse existing cvList")
+        }
+      }
+          
+      const newCv = {
+        id: cvFileId,
+        name: cvFile.name,
+        uploadedAt: `Subido el ${new Date().toLocaleDateString("es-ES", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })}`,
+        isPrimary: currentList.length === 0,
+      }
+      
+      await account.updatePrefs({
+        ...(rawPrefs || {}),
+        cvList: JSON.stringify([...currentList, newCv]),
+      })
+    } catch (err) {
+      console.error("Error al actualizar prefs:", err)
+    }
+  }
 
   // 2. Crear la fila job_offer con datos de la oferta y el plan normalizado
   const jobOffer = await tables.createRow({

@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 import { dashboardNavItems } from "./dashboard-data"
 
 export function DashboardSidebar({
-  newPracticeHref = "/practica",
+  newPracticeHref = "/dashboard/practice",
 }: {
   newPracticeHref?: string
 }) {

@@ -107,16 +107,22 @@ function HistoryCard({ entry }: { entry: HistoryEntry }) {
         "group flex items-center gap-4 rounded-2xl bg-ec-surface-container-low px-5 py-4 transition-all",
         "hover:bg-ec-surface-container cursor-pointer",
       )}
-      onClick={() =>
-        router.push(`/dashboard/feedback/${entry.sessionId}`)
-      }
+      onClick={() => {
+        if (entry.status === "completed" || entry.status === "failed") {
+          router.push(`/dashboard/feedback/${entry.sessionId}`)
+        } else {
+          router.push(`/dashboard/practice?sessionId=${entry.sessionId}`)
+        }
+      }}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
-          router.push(
-            `/dashboard/feedback/${entry.sessionId}`,
-          )
+          if (entry.status === "completed" || entry.status === "failed") {
+            router.push(`/dashboard/feedback/${entry.sessionId}`)
+          } else {
+            router.push(`/dashboard/practice?sessionId=${entry.sessionId}`)
+          }
         }
       }}
     >

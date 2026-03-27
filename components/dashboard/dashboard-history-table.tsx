@@ -95,7 +95,11 @@ export function DashboardHistoryTable({
                   </Link>
                 </Button>
               ) : (
-                  <Button size="sm" variant="outline" className="rounded-full px-4 text-xs font-semibold" disabled>Continuar</Button>
+                <Button asChild size="sm" variant="secondary" className="rounded-full px-4 text-xs font-semibold">
+                  <Link href={`/dashboard/feedback/${entry.sessionId}`}>
+                    Ver Feedback
+                  </Link>
+                </Button>
               )}
             </div>
           </div>

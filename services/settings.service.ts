@@ -43,7 +43,13 @@ export async function uploadCvFile(file: File) {
 }
 
 export async function deleteCvFile(fileId: string) {
-  return await getStorage().deleteFile(CV_FILES_BUCKET_ID, fileId)
+  try {
+    return await getStorage().deleteFile(CV_FILES_BUCKET_ID, fileId)
+  } catch (error: any) {
+    if (error?.code !== 404) {
+      throw error
+    }
+  }
 }
 
 // For downloading, we can resolve the download URL directly
