@@ -26,6 +26,18 @@ interface FeedbackHistoryProps {
   entries: HistoryEntry[]
 }
 
+function getSessionNavigationTarget(entry: HistoryEntry) {
+  if (
+    entry.status === "draft" ||
+    entry.status === "analyzing" ||
+    entry.status === "interviewing"
+  ) {
+    return `/dashboard/practice?sessionId=${entry.sessionId}`
+  }
+
+  return `/dashboard/feedback/${entry.sessionId}`
+}
+
 function StatusBadge({ status }: { status: string }) {
   const config: Record<
     string,
@@ -100,6 +112,7 @@ function MiniScoreBar({ score }: { score: number }) {
 
 function HistoryCard({ entry }: { entry: HistoryEntry }) {
   const router = useRouter()
+  const navigationTarget = getSessionNavigationTarget(entry)
 
   return (
     <div
@@ -107,16 +120,12 @@ function HistoryCard({ entry }: { entry: HistoryEntry }) {
         "group flex items-center gap-4 rounded-2xl bg-ec-surface-container-low px-5 py-4 transition-all",
         "hover:bg-ec-surface-container cursor-pointer",
       )}
-      onClick={() =>
-        router.push(`/dashboard/feedback/${entry.sessionId}`)
-      }
+      onClick={() => router.push(navigationTarget)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
-          router.push(
-            `/dashboard/feedback/${entry.sessionId}`,
-          )
+          router.push(navigationTarget)
         }
       }}
     >

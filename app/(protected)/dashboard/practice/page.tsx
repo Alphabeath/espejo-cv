@@ -141,13 +141,18 @@ export default function PracticePage() {
   // ── Handlers ────────────────────────────────────────────────────────────
 
   /** Step 1 → 2: user submits CV + job position */
-  const handleStart = useCallback(async (cvFile: File, position: string) => {
+  const handleStart = useCallback(async (
+    cvFile: File,
+    position: string,
+    options?: { existingCvId?: string },
+  ) => {
     setPageError(null)
     const plan = await createInterviewPlan(cvFile, position)
 
     // Persiste la sesión, la oferta y los turnos en Appwrite
     const { sessionId: newSessionId } = await startInterviewSession({
       cvFile,
+      existingCvId: options?.existingCvId,
       jobPosition: position,
       plan,
     })

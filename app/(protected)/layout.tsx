@@ -10,7 +10,7 @@ export default function ProtectedLayout({
 }>) {
   return (
     <AuthGuard mode="protected">
-      <div className="min-h-svh text-ec-on-surface md:flex">
+      <div className="min-h-svh text-ec-on-surface md:flex md:items-start">
         <DashboardSidebar />
         <div className="min-w-0 flex-1">{children}</div>
       </div>

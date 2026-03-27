@@ -69,6 +69,50 @@ export type UserCvFile = {
   sizeInBytes: number
 }
 
+async function resolveCvFileIdForSession({
+  cvFile,
+  existingCvId,
+  userId,
+  userPermissions,
+}: {
+  cvFile: File
+  existingCvId?: string
+  userId: string
+  userPermissions: string[]
+}) {
+  const { storage } = getServices()
+
+  if (existingCvId) {
+    let existingFile: Models.File
+
+    try {
+      existingFile = await storage.getFile({
+        bucketId: CV_FILES_BUCKET_ID,
+        fileId: existingCvId,
+      })
+    } catch {
+      throw new Error("No se pudo reutilizar el CV seleccionado. Intenta elegirlo de nuevo o subir uno nuevo.")
+    }
+
+    const isOwnedByUser = existingFile.$permissions.some((permission) => permission.includes(`user:${userId}`))
+
+    if (!isOwnedByUser || existingFile.mimeType !== "application/pdf") {
+      throw new Error("No se pudo reutilizar el CV seleccionado. Intenta elegirlo de nuevo o subir uno nuevo.")
+    }
+
+    return existingFile.$id
+  }
+
+  const uploadedFile = await storage.createFile(
+    CV_FILES_BUCKET_ID,
+    ID.unique(),
+    cvFile,
+    userPermissions,
+  )
+
+  return uploadedFile.$id
+}
+
 function parsePreferredCvIds(rawValue: unknown) {
   if (!rawValue) {
     return [] as string[]
@@ -283,14 +327,16 @@ async function listInterviewTurns(sessionId: string) {
  */
 export async function startInterviewSession({
   cvFile,
+  existingCvId,
   jobPosition,
   plan,
 }: {
   cvFile: File
+  existingCvId?: string
   jobPosition: string
   plan: InterviewPlan
 }): Promise<StartInterviewResult> {
-  const { account, tables, storage } = getServices()
+  const { account, tables } = getServices()
   const user = await account.get()
   const userId = user.$id
   const now = new Date().toISOString()
@@ -302,15 +348,13 @@ export async function startInterviewSession({
     Permission.delete(Role.user(userId)),
   ]
 
-  // 1. Subir CV al bucket de Storage
-  const uploadedFile = await storage.createFile(
-    CV_FILES_BUCKET_ID,
-    ID.unique(),
+  // 1. Reutilizar el CV ya guardado cuando exista; si no, subir uno nuevo.
+  const cvFileId = await resolveCvFileIdForSession({
     cvFile,
+    existingCvId,
+    userId,
     userPermissions,
-  )
-
-  const cvFileId = uploadedFile.$id
+  })
 
   // 2. Crear la fila job_offer con datos de la oferta y el plan normalizado
   const jobOffer = await tables.createRow({

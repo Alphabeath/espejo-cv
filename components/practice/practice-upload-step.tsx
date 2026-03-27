@@ -12,7 +12,7 @@ import { useUserCvs } from "@/hooks/useUserCvs"
 import { getCvDownloadUrl } from "@/services/settings.service"
 
 interface PracticeUploadStepProps {
-  onStart: (cvFile: File, jobPosition: string) => void
+  onStart: (cvFile: File, jobPosition: string, options?: { existingCvId?: string }) => void
   isLoading?: boolean
 }
 
@@ -400,7 +400,12 @@ export function PracticeUploadStep({
         <Button
           size="lg"
           disabled={!canStart || isLoading}
-          onClick={() => canStart && onStart(cvFile!, jobPosition.trim())}
+          onClick={() =>
+            canStart &&
+            onStart(cvFile!, jobPosition.trim(), {
+              existingCvId: cvSource === "stored" ? selectedStoredCvId ?? undefined : undefined,
+            })
+          }
           className="h-10 w-full max-w-xs gap-2 rounded-lg px-6 text-sm font-semibold shadow-md shadow-ec-primary/20 transition-all hover:-translate-y-0.5"
         >
           {isLoading ? (

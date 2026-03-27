@@ -126,6 +126,20 @@ export type SessionDetail = {
   totalQuestions: number
 }
 
+export class SessionRedirectError extends Error {
+  destination: string
+
+  constructor(message: string, destination: string) {
+    super(message)
+    this.name = "SessionRedirectError"
+    this.destination = destination
+  }
+}
+
+function canResumeInterview(status: string) {
+  return status === "draft" || status === "analyzing" || status === "interviewing"
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function getLoadedRelation<T>(value?: T | string | null) {
@@ -408,6 +422,13 @@ export async function getSessionDetail(
   const report = await getExistingReport(sessionId)
 
   if (!report) {
+    if (canResumeInterview(session.status)) {
+      throw new SessionRedirectError(
+        "Esta sesión aún no está completada. Te llevamos a la entrevista para continuarla.",
+        `/dashboard/practice?sessionId=${sessionId}`,
+      )
+    }
+
     throw new Error("Esta sesión aún no tiene un reporte generado.")
   }
 

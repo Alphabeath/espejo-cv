@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { getSessionDetail } from "@/services/feedback.service"
+import { getSessionDetail, SessionRedirectError } from "@/services/feedback.service"
 import type { SessionDetail, SessionTurnDetail, FeedbackItemParsed } from "@/services/feedback.service"
 
 // ─── Score Arc ──────────────────────────────────────────────────────────────
@@ -166,10 +166,15 @@ export function FeedbackSessionDetail({ sessionId }: FeedbackSessionDetailProps)
       setDetail(data)
       setState("ready")
     } catch (error) {
+      if (error instanceof SessionRedirectError) {
+        router.replace(error.destination)
+        return
+      }
+
       setErrorMessage(error instanceof Error ? error.message : "No se pudo cargar la sesión.")
       setState("error")
     }
-  }, [sessionId])
+  }, [router, sessionId])
 
   useEffect(() => { void loadDetail() }, [loadDetail])
 
@@ -222,7 +227,7 @@ export function FeedbackSessionDetail({ sessionId }: FeedbackSessionDetailProps)
 
       <div className="grid gap-8 md:grid-cols-[auto_1fr]">
         {/* Score panel */}
-        <div className="quiet-surface flex flex-col items-center gap-6 rounded-3xl p-8 md:min-w-[240px]">
+        <div className="quiet-surface flex flex-col items-center gap-6 rounded-3xl p-8 md:min-w-60">
           <ScoreArc score={detail.overallScore} />
 
           <div className="w-full space-y-3 text-center">
