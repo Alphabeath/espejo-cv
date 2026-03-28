@@ -28,9 +28,8 @@ export function useSettings() {
   // Practice history query
   const historyQuery = useQuery<PracticeHistoryEntry[]>({
     queryKey: getHistoryQueryKey(userId),
-    queryFn: getUserPracticeHistory,
+    queryFn: () => getUserPracticeHistory(),
     enabled: Boolean(userId),
-    placeholderData: (previousData) => previousData,
   })
 
   // Update name mutation
