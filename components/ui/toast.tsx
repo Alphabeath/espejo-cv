@@ -34,7 +34,7 @@ const ToastContext = createContext<ToastContextValue | null>(null)
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([])
-  const timeoutMapRef = useRef<Map<string, ReturnType<typeof window.setTimeout>>>(new Map())
+  const timeoutMapRef = useRef<Map<string, number>>(new Map())
 
   const dismissToast = useCallback((id: string) => {
     const timeoutId = timeoutMapRef.current.get(id)
@@ -54,7 +54,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
     const timeoutId = window.setTimeout(() => {
       dismissToast(id)
-    }, duration)
+    }, duration) as unknown as number
 
     timeoutMapRef.current.set(id, timeoutId)
   }, [dismissToast])
