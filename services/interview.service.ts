@@ -3,6 +3,7 @@ import { ID, Permission, Query, Role } from "appwrite"
 
 import { createAppwriteServices } from "@/lib/appwrite"
 import type { InterviewPlan } from "@/lib/ai-types"
+import { getHiddenCvIds } from "@/services/settings.service"
 
 const DATABASE_ID = "espejo_cv"
 const CV_SESSIONS_COLLECTION_ID = "cv_sessions"
@@ -214,9 +215,13 @@ export async function listCurrentUserCvFiles(): Promise<UserCvFile[]> {
     return []
   }
 
+  // Filter out soft-deleted CVs
+  const hiddenIds = new Set(await getHiddenCvIds())
+  const visibleCvIds = associatedCvIds.filter((id) => !hiddenIds.has(id))
+
   const preferredIdsSet = new Set(preferredCvIds)
   const ownedFiles = await Promise.all(
-    associatedCvIds.map(async (fileId) => {
+    visibleCvIds.map(async (fileId) => {
       try {
         const file = await storage.getFile({
           bucketId: CV_FILES_BUCKET_ID,

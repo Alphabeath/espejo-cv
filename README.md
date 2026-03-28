@@ -88,7 +88,7 @@ Hoy el paso 1 sí usa backend real para analizar el CV y el puesto, y el dictado
 - Route Handlers de Next.js.
 - Appwrite para auth, storage y tablas relacionales.
 - AI SDK (`ai`) para orquestar generación y transcripción.
-- Groq como proveedor para generación estructurada.
+- Cerebras como proveedor preferido para generación estructurada, con Groq como alternativa.
 - Deepgram como proveedor de transcripción.
 - `pdfreader` para extracción de texto desde CV en PDF.
 
@@ -96,7 +96,8 @@ Hoy el paso 1 sí usa backend real para analizar el CV y el puesto, y el dictado
 
 La implementación actual en `services/ai.service.ts` usa:
 
-- Groq con el modelo `moonshotai/kimi-k2-instruct-0905` para generar el plan de entrevista.
+- Cerebras con el modelo `qwen-3-235b-a22b-instruct-2507` por defecto para generar el plan de entrevista y la evaluación.
+- Groq con el modelo `moonshotai/kimi-k2-instruct-0905` como proveedor alternativo configurable.
 - Deepgram con el modelo `nova-3` para transcribir audio.
 
 El plan de entrevista se genera como objeto estructurado validado con Zod. El backend devuelve:
@@ -255,7 +256,7 @@ La implementación base de estos tokens vive en `app/globals.css` y la justifica
 - Node.js 20 o superior recomendado.
 - npm.
 - Proyecto de Appwrite accesible.
-- Claves válidas para Groq y Deepgram.
+- Claves válidas para Cerebras o Groq, y Deepgram.
 
 ## Instalación local
 
@@ -273,8 +274,10 @@ NEXT_PUBLIC_APPWRITE_ENDPOINT=
 NEXT_PUBLIC_APPWRITE_PROJECT_ID=
 NEXT_PUBLIC_APPWRITE_PROJECT_NAME=
 APPWRITE_API_KEY=
+CEREBRAS_API_KEY=
 GROQ_API_KEY=
 DEEPGRAM_API_KEY=
+AI_TEXT_PROVIDER=
 ```
 
 ### Notas importantes
@@ -282,8 +285,10 @@ DEEPGRAM_API_KEY=
 - `NEXT_PUBLIC_APPWRITE_ENDPOINT` y `NEXT_PUBLIC_APPWRITE_PROJECT_ID` son obligatorias para inicializar el SDK.
 - `NEXT_PUBLIC_APPWRITE_PROJECT_NAME` es opcional.
 - `APPWRITE_API_KEY` se usa para tareas de provisionamiento y operaciones server-side que la necesiten.
-- `GROQ_API_KEY` es obligatoria para generar el plan de entrevista.
+- `CEREBRAS_API_KEY` es la clave preferida para generar el plan de entrevista y la evaluación.
+- `GROQ_API_KEY` sigue disponible como alternativa compatible.
 - `DEEPGRAM_API_KEY` es obligatoria para transcripción.
+- `AI_TEXT_PROVIDER` es opcional y acepta `cerebras` o `groq`. Si no se define, el sistema prefiere Cerebras y usa Groq solo si Cerebras no está configurado.
 
 ## Provisionamiento de Appwrite
 

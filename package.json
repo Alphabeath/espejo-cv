@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/cerebras": "^2.0.41",
     "@ai-sdk/deepgram": "^2.0.26",
     "@ai-sdk/groq": "^3.0.31",
     "@rive-app/react-webgl2": "^4.27.2",

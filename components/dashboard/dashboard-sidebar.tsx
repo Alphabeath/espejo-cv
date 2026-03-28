@@ -49,6 +49,7 @@ export function DashboardSidebar({
   const { user, logout, isLoggingOut } = useAuth()
   const navigationItems = dashboardNavItems.filter((item) => item.href !== newPracticeHref)
   const userInitials = getUserInitials(user?.name)
+  const isPracticeRoute = pathname === newPracticeHref || pathname.startsWith(`${newPracticeHref}/`)
 
   async function handleLogout() {
     try {
@@ -127,16 +128,18 @@ export function DashboardSidebar({
         <div className="flex-1" />
 
         <div className="mt-6 space-y-3">
-          <Button
-            asChild
-            size="lg"
-            className="w-full justify-center rounded-2xl text-sm font-semibold"
-          >
-            <Link href={newPracticeHref}>
-              <CirclePlus className="size-4" />
-              Nueva práctica
-            </Link>
-          </Button>
+          {!isPracticeRoute && (
+            <Button
+              asChild
+              size="lg"
+              className="w-full justify-center rounded-2xl text-sm font-semibold"
+            >
+              <Link href={newPracticeHref}>
+                <CirclePlus className="size-4" />
+                Nueva práctica
+              </Link>
+            </Button>
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

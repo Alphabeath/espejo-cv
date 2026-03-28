@@ -344,26 +344,6 @@ export function FeedbackSessionDetail({ sessionId }: FeedbackSessionDetailProps)
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          size="lg"
-          onClick={() => router.push("/dashboard/practice")}
-          className="gap-2 rounded-xl px-7 text-sm font-semibold shadow-lg shadow-ec-primary/20 hover:-translate-y-0.5 transition-all"
-        >
-          <RotateCcw className="size-4" />
-          Nueva práctica
-        </Button>
-        <Button
-          variant="secondary"
-          size="lg"
-          onClick={() => router.push("/dashboard/feedback")}
-          className="gap-2 rounded-xl px-7 text-sm"
-        >
-          Ver todo el feedback
-          <ArrowRight className="size-4" />
-        </Button>
-      </div>
     </div>
   )
 }
