@@ -10,6 +10,7 @@ const CV_SESSIONS_COLLECTION_ID = "cv_sessions"
 const JOB_OFFERS_COLLECTION_ID = "job_offers"
 const INTERVIEW_TURNS_COLLECTION_ID = "interview_turns"
 const CV_FILES_BUCKET_ID = "cv-files"
+const TTS_AUDIO_BUCKET_ID = "tts-audio"
 
 function getServices() {
   return createAppwriteServices()
@@ -44,6 +45,7 @@ type InterviewTurnRow = Models.Row & {
   turnIndex: number
   question: string
   answer?: string
+  questionAudioFileId?: string
   status: InterviewTurnStatus
   askedAt: string
   answeredAt?: string
@@ -523,4 +525,72 @@ export async function completeInterviewSession(sessionId: string) {
       lastActivityAt: now,
     },
   })
+}
+
+// ─── TTS Audio Cache ──────────────────────────────────────────────────────────
+
+export type TurnSpeechInfo = {
+  turnId: string
+  question: string
+  questionAudioFileId?: string
+}
+
+export async function getInterviewTurnForSpeech(
+  sessionId: string,
+  turnIndex: number,
+): Promise<TurnSpeechInfo> {
+  const { account } = getServices()
+  const user = await account.get()
+
+  await getOwnedSession(sessionId, user.$id)
+
+  const turns = await listInterviewTurns(sessionId)
+  const turn = turns.find((item) => item.turnIndex === turnIndex)
+
+  if (!turn) {
+    throw new Error("No se encontró la pregunta solicitada.")
+  }
+
+  return {
+    turnId: turn.$id,
+    question: turn.question,
+    questionAudioFileId: turn.questionAudioFileId,
+  }
+}
+
+export async function saveTurnAudioFile(
+  turnId: string,
+  audioBlob: Blob,
+  userId: string,
+): Promise<string> {
+  const { storage, tables } = getServices()
+
+  const userPermissions = [
+    Permission.read(Role.user(userId)),
+    Permission.write(Role.user(userId)),
+    Permission.update(Role.user(userId)),
+    Permission.delete(Role.user(userId)),
+  ]
+
+  const file = await storage.createFile(
+    TTS_AUDIO_BUCKET_ID,
+    ID.unique(),
+    new File([audioBlob], `question-${turnId}.mp3`, { type: "audio/mpeg" }),
+    userPermissions,
+  )
+
+  await tables.updateRow({
+    databaseId: DATABASE_ID,
+    tableId: INTERVIEW_TURNS_COLLECTION_ID,
+    rowId: turnId,
+    data: { questionAudioFileId: file.$id },
+  })
+
+  return file.$id
+}
+
+export function getTtsAudioDownloadUrl(fileId: string): string {
+  const { storage } = getServices()
+
+  return storage.getFileDownload({ bucketId: TTS_AUDIO_BUCKET_ID, fileId })
 }

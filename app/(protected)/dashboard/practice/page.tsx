@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 import { useAI } from "@/hooks/useAI"
@@ -35,11 +35,13 @@ export default function PracticePage() {
     questions,
     isAnalyzing,
     isTranscribing,
+    isSpeaking,
     error: aiError,
     createInterviewPlan,
     clearError: clearAiError,
     loadInterviewPlan,
     transcribeAudio,
+    speakQuestion,
     reset: resetAI,
   } = useAI()
   const requestedSessionId = searchParams.get("sessionId")
@@ -58,6 +60,10 @@ export default function PracticePage() {
 
   // Results state
   const [result, setResult] = useState<PracticeResult | null>(null)
+
+  // TTS state
+  const [questionAudioUrl, setQuestionAudioUrl] = useState<string | null>(null)
+  const audioUrlRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!aiError) {
@@ -85,6 +91,19 @@ export default function PracticePage() {
     setPageError(null)
   }, [pageError, toast])
 
+  /** Pre-fetch TTS audio for a given question, updating the shared ref/state */
+  const prefetchAudio = useCallback(async (
+    sid: string,
+    turnIdx: number,
+    text: string,
+  ) => {
+    const url = await speakQuestion(sid, turnIdx, text)
+
+    if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current)
+    audioUrlRef.current = url
+    setQuestionAudioUrl(url)
+  }, [speakQuestion])
+
   useEffect(() => {
     if (!requestedSessionId || requestedSessionId === sessionId) {
       return
@@ -111,6 +130,15 @@ export default function PracticePage() {
         setDisplayJobTitle(restoredSession.plan.roleSummary)
         setCurrentQuestionIndex(restoredSession.currentQuestionIndex)
         setIsInterviewComplete(restoredSession.isInterviewComplete)
+
+        // Pre-fetch audio for the current question on restore (non-blocking)
+        if (!restoredSession.isInterviewComplete) {
+          const currentQ = restoredSession.plan.questions[restoredSession.currentQuestionIndex]
+          if (currentQ?.text) {
+            void prefetchAudio(restoredSession.sessionId, restoredSession.currentQuestionIndex, currentQ.text)
+          }
+        }
+
         setStep("interview")
       } catch (restoreError) {
         if (cancelled) {
@@ -136,7 +164,7 @@ export default function PracticePage() {
     return () => {
       cancelled = true
     }
-  }, [loadInterviewPlan, requestedSessionId, sessionId])
+  }, [loadInterviewPlan, prefetchAudio, requestedSessionId, sessionId])
 
   // ── Handlers ────────────────────────────────────────────────────────────
 
@@ -165,8 +193,13 @@ export default function PracticePage() {
 
     if (plan.questions.length > 0) {
       setStep("interview")
+
+      // Pre-fetch audio for the first question (non-blocking — interview shows while loading)
+      if (plan.questions[0]?.text) {
+        void prefetchAudio(newSessionId, 0, plan.questions[0].text)
+      }
     }
-  }, [createInterviewPlan, router])
+  }, [createInterviewPlan, prefetchAudio, router])
 
   /** Step 2: user sends an answer */
   const handleSendAnswer = useCallback(
@@ -193,7 +226,15 @@ export default function PracticePage() {
         if (isLastQuestion) {
           setIsInterviewComplete(true)
         } else {
-          setCurrentQuestionIndex((index) => index + 1)
+          const nextIndex = currentQuestionIndex + 1
+          const nextQuestion = questions[nextIndex]
+
+          // Pre-fetch audio for the next question while still in "Analizando respuesta"
+          if (nextQuestion?.text) {
+            await prefetchAudio(sessionId, nextIndex, nextQuestion.text)
+          }
+
+          setCurrentQuestionIndex(nextIndex)
         }
       } catch (submitError) {
         setPageError(
@@ -205,7 +246,7 @@ export default function PracticePage() {
         setIsAiTyping(false)
       }
     },
-    [currentQuestionIndex, questions.length, sessionId],
+    [currentQuestionIndex, prefetchAudio, questions, sessionId],
   )
 
   /** Step 2 → 3: user finishes interview */
@@ -317,6 +358,9 @@ export default function PracticePage() {
     setDisplayJobTitle("")
     setResult(null)
     setPageError(null)
+    if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current)
+    audioUrlRef.current = null
+    setQuestionAudioUrl(null)
     resetAI()
     router.replace("/dashboard/practice")
   }, [resetAI, router])
@@ -373,6 +417,8 @@ export default function PracticePage() {
           onTranscribeAudio={transcribeAudio}
           onFinish={handleFinish}
           isFinishing={isFinishing}
+          audioUrl={questionAudioUrl}
+          onQuestionAudioEnd={() => setQuestionAudioUrl(null)}
         />
       )}
 

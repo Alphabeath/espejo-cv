@@ -57,7 +57,7 @@ export function DashboardHistoryTable({
   entries?: DashboardHistoryEntry[]
 }) {
   return (
-    <section className="mb-8 overflow-hidden rounded-2xl bg-ec-surface-container-lowest shadow-[0_24px_60px_-40px_oklch(0.27_0.015_210/0.28)]">
+    <section className="mt-8 overflow-hidden rounded-2xl bg-ec-surface-container-lowest shadow-[0_24px_60px_-40px_oklch(0.27_0.015_210/0.28)]">
       <div className="grid grid-cols-[minmax(0,2fr)_110px_140px_minmax(0,1.5fr)_80px_120px] gap-4 bg-ec-surface-container-low/60 px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-ec-on-surface-variant">
         <span>Puesto de Trabajo</span>
         <span>Estado</span>

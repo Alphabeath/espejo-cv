@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Loader2, Send, SkipForward, Sparkles, Waves } from "lucide-react"
 
 import { Persona } from "@/components/ai-elements/persona"
@@ -30,6 +30,8 @@ interface PracticeInterviewStepProps {
   onTranscribeAudio: (audioBlob: Blob) => Promise<string>
   onFinish: () => void
   isFinishing?: boolean
+  audioUrl?: string | null
+  onQuestionAudioEnd?: () => void
 }
 
 export function PracticeInterviewStep({
@@ -45,10 +47,28 @@ export function PracticeInterviewStep({
   onTranscribeAudio,
   onFinish,
   isFinishing = false,
+  audioUrl,
+  onQuestionAudioEnd,
 }: PracticeInterviewStepProps) {
   const [answer, setAnswer] = useState("")
   const [isListening, setIsListening] = useState(false)
   const [isPersonaReady, setIsPersonaReady] = useState(false)
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false)
+  const audioRef = useRef<HTMLAudioElement>(null)
+
+  useEffect(() => {
+    const el = audioRef.current
+    if (!el) return
+
+    if (!audioUrl) {
+      el.pause()
+      el.removeAttribute("src")
+      return
+    }
+
+    el.src = audioUrl
+    el.play().catch(() => { /* autoplay blocked — interview continues without audio */ })
+  }, [audioUrl])
   const isQuestionReady = currentQuestion.trim().length > 0
   const effectivePreparing = isPreparing || (!isInterviewComplete && !isQuestionReady)
   const canSend =
@@ -57,7 +77,8 @@ export function PracticeInterviewStep({
     !isAiTyping &&
     !isTranscribing &&
     !isFinishing &&
-    !isInterviewComplete
+    !isInterviewComplete &&
+    !isAudioPlaying
 
   function handleSend() {
     if (!canSend) return
@@ -77,6 +98,8 @@ export function PracticeInterviewStep({
     ? "Preparando entrevista"
     : isInterviewComplete
     ? "Sesión completada"
+    : isAudioPlaying
+      ? "Hablando pregunta"
     : isAiTyping
       ? "Analizando respuesta"
       : isTranscribing
@@ -97,6 +120,8 @@ export function PracticeInterviewStep({
     ? "idle"
     : isInterviewComplete
     ? "idle"
+    : isAudioPlaying
+      ? "speaking"
     : isAiTyping
       ? "thinking"
       : isPersonaListening
@@ -108,6 +133,14 @@ export function PracticeInterviewStep({
 
   return (
     <div className="animate-fade-in flex flex-1 flex-col gap-0 overflow-hidden">
+      {/* Hidden audio element for TTS playback */}
+      <audio
+        ref={audioRef}
+        hidden
+        onPlay={() => setIsAudioPlaying(true)}
+        onEnded={() => { setIsAudioPlaying(false); onQuestionAudioEnd?.() }}
+        onError={() => { setIsAudioPlaying(false); onQuestionAudioEnd?.() }}
+      />
       <header className="mb-2 flex shrink-0 items-center justify-between gap-6 border-b border-ec-outline-variant/10 pb-4 pt-4">
         <div className="flex min-w-0 items-center gap-3">
           <div aria-hidden="true" className="flex shrink-0 items-center gap-0.5">

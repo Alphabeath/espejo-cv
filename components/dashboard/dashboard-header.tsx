@@ -5,7 +5,7 @@ export function DashboardHeader({
   description =
     "Revisa tu progreso y analiza tus resultados en simulaciones pasadas para perfeccionar tu narrativa profesional.",
   metrics = [
-    { label: "SCORE PROMEDIO", value: "0", unit: "%" },
+    { label: "SCORE ", value: "0", unit: "%" },
     { label: "SIMULACIONES", value: "0", unit: "" },
   ],
 }: {

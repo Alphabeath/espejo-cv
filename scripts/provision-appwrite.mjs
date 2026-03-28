@@ -7,6 +7,7 @@ const PROJECT_ROOT = path.resolve(SCRIPT_DIR, "..")
 const ENV_PATH = path.join(PROJECT_ROOT, ".env")
 const DATABASE_ID = "espejo_cv"
 const BUCKET_ID = "cv-files"
+const TTS_BUCKET_ID = "tts-audio"
 
 function readEnvFile(filePath) {
   return fs.readFileSync(filePath, "utf8")
@@ -78,6 +79,7 @@ const collections = [
       { key: "status", type: "varchar", size: 64, required: true },
       { key: "askedAt", type: "datetime", required: true },
       { key: "answeredAt", type: "datetime", required: false },
+      { key: "questionAudioFileId", type: "varchar", size: 255, required: false },
     ],
     indexes: [
       { key: "idx_status_askedAt", type: "key", attributes: ["status", "askedAt"] },
@@ -142,6 +144,19 @@ const bucket = {
   maximumFileSize: 30000000,
   allowedFileExtensions: ["pdf"],
   compression: "gzip",
+  encryption: true,
+  antivirus: true,
+}
+
+const ttsBucket = {
+  bucketId: TTS_BUCKET_ID,
+  name: "TTS Audio",
+  permissions: [],
+  fileSecurity: true,
+  enabled: true,
+  maximumFileSize: 5000000,
+  allowedFileExtensions: ["mp3"],
+  compression: "none",
   encryption: true,
   antivirus: true,
 }
@@ -213,6 +228,24 @@ async function ensureBucket() {
   })
 
   console.log(`bucket ${BUCKET_ID}: created`)
+  return created
+}
+
+async function ensureTtsBucket() {
+  try {
+    const existing = await request(`/storage/buckets/${TTS_BUCKET_ID}`)
+    console.log(`bucket ${TTS_BUCKET_ID}: exists`)
+    return existing
+  } catch (error) {
+    if (error.status !== 404) throw error
+  }
+
+  const created = await request("/storage/buckets", {
+    method: "POST",
+    body: JSON.stringify(ttsBucket),
+  })
+
+  console.log(`bucket ${TTS_BUCKET_ID}: created`)
   return created
 }
 
@@ -523,6 +556,7 @@ async function provisionCollection(collection) {
 async function main() {
   await ensureDatabase()
   await ensureBucket()
+  await ensureTtsBucket()
 
   for (const collection of collections) {
     await ensureCollection(collection)

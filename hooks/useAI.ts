@@ -3,9 +3,16 @@
 import { useCallback, useState } from "react"
 
 import type { AudioTranscription, InterviewPlan } from "@/lib/ai-types"
+import { createAppwriteServices } from "@/lib/appwrite"
+import {
+	getInterviewTurnForSpeech,
+	getTtsAudioDownloadUrl,
+	saveTurnAudioFile,
+} from "@/services/interview.service"
 
 const ANALYZE_ERROR_MESSAGE = "No pudimos preparar la entrevista en este momento. Intenta nuevamente."
 const TRANSCRIBE_ERROR_MESSAGE = "No pudimos procesar el audio en este momento. Intenta nuevamente."
+const SPEAK_ERROR_MESSAGE = "No pudimos generar el audio de la pregunta."
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {
 	const payload = (await response.json().catch(() => null)) as
@@ -29,6 +36,7 @@ export function useAI() {
 	const [interviewPlan, setInterviewPlan] = useState<InterviewPlan | null>(null)
 	const [isAnalyzing, setIsAnalyzing] = useState(false)
 	const [isTranscribing, setIsTranscribing] = useState(false)
+	const [isSpeaking, setIsSpeaking] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
 	const createInterviewPlan = useCallback(
@@ -94,10 +102,61 @@ export function useAI() {
 		setInterviewPlan(plan)
 	}, [])
 
+	const speakQuestion = useCallback(async (
+		sessionId: string,
+		turnIndex: number,
+		text: string,
+	): Promise<string | null> => {
+		setIsSpeaking(true)
+
+		try {
+			// 1. Check Appwrite cache
+			const turnInfo = await getInterviewTurnForSpeech(sessionId, turnIndex)
+
+			if (turnInfo.questionAudioFileId) {
+				const downloadUrl = getTtsAudioDownloadUrl(turnInfo.questionAudioFileId)
+				const cached = await fetch(downloadUrl)
+
+				if (cached.ok) {
+					const blob = await cached.blob()
+					return URL.createObjectURL(blob)
+				}
+			}
+
+			// 2. Generate via API
+			const response = await fetch("/api/ai/speak", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ text }),
+			})
+
+			if (!response.ok) {
+				console.warn("TTS generation failed, continuing without audio")
+				return null
+			}
+
+			const blob = await response.blob()
+			const audioUrl = URL.createObjectURL(blob)
+
+			// 3. Save to Appwrite cache (non-blocking)
+			createAppwriteServices().account.get()
+				.then((user) => saveTurnAudioFile(turnInfo.turnId, blob, user.$id))
+				.catch(() => { /* cache miss is non-critical */ })
+
+			return audioUrl
+		} catch (requestError) {
+			console.warn("TTS request failed", requestError)
+			return null
+		} finally {
+			setIsSpeaking(false)
+		}
+	}, [])
+
 	const reset = useCallback(() => {
 		setInterviewPlan(null)
 		setIsAnalyzing(false)
 		setIsTranscribing(false)
+		setIsSpeaking(false)
 		setError(null)
 	}, [])
 
@@ -110,9 +169,11 @@ export function useAI() {
 		questions: interviewPlan?.questions ?? [],
 		isAnalyzing,
 		isTranscribing,
+		isSpeaking,
 		error,
 		createInterviewPlan,
 		transcribeAudio,
+		speakQuestion,
 		loadInterviewPlan,
 		reset,
 		clearError,

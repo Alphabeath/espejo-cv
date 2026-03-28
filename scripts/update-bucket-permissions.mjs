@@ -6,6 +6,7 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = path.resolve(SCRIPT_DIR, "..")
 const ENV_PATH = path.join(PROJECT_ROOT, ".env")
 const BUCKET_ID = "cv-files"
+const TTS_BUCKET_ID = "tts-audio"
 
 function readEnvFile(filePath) {
   return fs.readFileSync(filePath, "utf8")
@@ -73,6 +74,29 @@ async function main() {
   })
 
   console.log("Bucket updated successfully.")
+
+  console.log("Updating TTS Audio bucket permissions...")
+
+  await request(`/storage/buckets/${TTS_BUCKET_ID}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      name: "TTS Audio",
+      permissions: [
+        'create("users")',
+        'read("users")',
+        'delete("users")'
+      ],
+      fileSecurity: true,
+      enabled: true,
+      maximumFileSize: 5000000,
+      allowedFileExtensions: ["mp3"],
+      compression: "none",
+      encryption: true,
+      antivirus: true,
+    }),
+  })
+
+  console.log("TTS Audio bucket updated successfully.")
 }
 
 main().catch(err => {

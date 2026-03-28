@@ -50,8 +50,14 @@ export default function Dashboard() {
       : "Sube tu CV y completa una simulación para empezar a construir historial y métricas reales."
 
   return (
-    <main className="min-h-svh overflow-y-auto px-6 py-8 md:px-10">
+    <main className="min-h-svh overflow-y-auto px-6 py-8 md:px-10 ">
       <DashboardHeader metrics={metrics} />
+      <DashboardPanels
+        insightTitle={insightTitle}
+        insightDescription={insightDescription}
+        nextGoalTitle={nextGoalTitle}
+        nextGoalDescription={nextGoalDescription}
+      />
 
       {isLoading ? (
         <section className="mb-8 rounded-2xl bg-ec-surface-container-low px-6 py-10 text-sm text-ec-on-surface-variant">
@@ -69,12 +75,7 @@ export default function Dashboard() {
         </section>
       )}
 
-      <DashboardPanels
-        insightTitle={insightTitle}
-        insightDescription={insightDescription}
-        nextGoalTitle={nextGoalTitle}
-        nextGoalDescription={nextGoalDescription}
-      />
+      
     </main>
   )
 }

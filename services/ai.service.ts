@@ -1,6 +1,6 @@
 import "server-only"
 
-import { experimental_transcribe as transcribe, generateObject } from "ai"
+import { experimental_transcribe as transcribe, experimental_generateSpeech as generateSpeech, generateObject } from "ai"
 import { cerebras } from "@ai-sdk/cerebras"
 import { deepgram } from "@ai-sdk/deepgram"
 import { groq } from "@ai-sdk/groq"
@@ -339,6 +339,28 @@ export async function generateInterviewPlan({
 			id: question.id || `question-${index + 1}`,
 			text: question.text,
 		})),
+	}
+}
+
+// ─── Question Text-to-Speech ────────────────────────────────────────────────
+
+const DEEPGRAM_TTS_MODEL = "aura-2-celeste-es"
+
+export async function generateQuestionSpeech(text: string): Promise<{ audio: Uint8Array; mediaType: string }> {
+	ensureEnv("DEEPGRAM_API_KEY")
+
+	if (!text.trim()) {
+		throw new Error("El texto para generar audio no puede estar vacío.")
+	}
+
+	const result = await generateSpeech({
+		model: deepgram.speech(DEEPGRAM_TTS_MODEL),
+		text,
+	})
+
+	return {
+		audio: result.audio.uint8Array,
+		mediaType: result.audio.mediaType ?? "audio/mpeg",
 	}
 }
 
