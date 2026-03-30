@@ -16,11 +16,12 @@ import {
   Lightbulb,
   ChevronDown,
   ChevronUp,
+  Clock,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { cn, formatDuration } from "@/lib/utils"
 import { getSessionDetail, SessionRedirectError } from "@/services/feedback.service"
 import type { SessionDetail, SessionTurnDetail, FeedbackItemParsed } from "@/services/feedback.service"
 
@@ -231,17 +232,21 @@ export function FeedbackSessionDetail({ sessionId }: FeedbackSessionDetailProps)
           <ScoreArc score={detail.overallScore} />
 
           <div className="w-full space-y-3 text-center">
-            <div className="flex items-center justify-center gap-3 text-xs text-ec-on-surface-variant">
-              <span className="flex items-center gap-1">
-                <MessageSquare className="size-3.5" />
-                {detail.totalQuestions} preguntas
-              </span>
-              <span className="text-ec-outline-variant">·</span>
-              <span className="flex items-center gap-1">
-                <TrendingUp className="size-3.5" />
-                {detail.confidence}% confianza
-              </span>
-            </div>
+              <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-ec-on-surface-variant">
+                <span className="flex items-center gap-1">
+                  <MessageSquare className="size-3.5" />
+                  {detail.totalQuestions} preguntas
+                </span>
+                {detail.durationInSeconds ? (
+                  <>
+                    <span className="text-ec-outline-variant">·</span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="size-3.5" />
+                      {formatDuration(detail.durationInSeconds)}
+                    </span>
+                  </>
+                ) : null}
+                </div>
 
             <div className="flex items-center justify-center gap-0.5" aria-label={`${stars} estrellas de 5`}>
               {[1, 2, 3, 4, 5].map((star) => (

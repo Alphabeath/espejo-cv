@@ -90,6 +90,7 @@ const collections = [
     name: "Reports",
     attributes: [
       { key: "overallScore", type: "integer", required: true },
+      { key: "durationInSeconds", type: "integer", required: false },
       { key: "summary", type: "longtext", required: true },
       { key: "strengths", type: "longtext", required: false },
       { key: "gaps", type: "longtext", required: false },

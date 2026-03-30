@@ -28,7 +28,7 @@ interface PracticeInterviewStepProps {
   totalQuestions: number
   onSendAnswer: (answer: string) => void
   onTranscribeAudio: (audioBlob: Blob) => Promise<string>
-  onFinish: () => void
+  onFinish: (duration: number) => void
   isFinishing?: boolean
   audioUrl?: string | null
   onQuestionAudioEnd?: () => void
@@ -54,7 +54,24 @@ export function PracticeInterviewStep({
   const [isListening, setIsListening] = useState(false)
   const [isPersonaReady, setIsPersonaReady] = useState(false)
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const audioRef = useRef<HTMLAudioElement>(null)
+
+  useEffect(() => {
+    if (isInterviewComplete || isPreparing || isFinishing) return
+
+    const timer = setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1)
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [isInterviewComplete, isPreparing, isFinishing])
+
+  const formatTime = (totalSeconds: number) => {
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+  }
 
   useEffect(() => {
     const el = audioRef.current
@@ -172,6 +189,14 @@ export function PracticeInterviewStep({
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
+          <div className="flex min-w-18 flex-col rounded-2xl bg-ec-surface-container-low px-4 py-2.5">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ec-on-surface-variant">
+              Tiempo
+            </span>
+            <span className="mt-0.5 text-xl font-bold text-ec-on-surface tabular-nums">
+              {formatTime(elapsedSeconds)}
+            </span>
+          </div>
           <div className="flex min-w-18 flex-col rounded-2xl bg-ec-surface-container-low px-4 py-2.5">
             <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ec-on-surface-variant">
               Avance
@@ -299,7 +324,7 @@ export function PracticeInterviewStep({
               {isInterviewComplete ? (
                 <Button
                   size="lg"
-                  onClick={onFinish}
+                  onClick={() => onFinish(elapsedSeconds)}
                   disabled={isFinishing}
                   className="gap-2 rounded-xl px-6 text-sm font-semibold"
                 >

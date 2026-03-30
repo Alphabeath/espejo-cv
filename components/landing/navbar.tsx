@@ -5,11 +5,10 @@ import { User } from "lucide-react"
 import * as motion from "motion/react-client"
 
 import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/components/theme-toggle"
 
 const navLinks = [
   { label: "Inicio", href: "/" },
-  { label: "Cómo Funciona", href: "#como-funciona" },
+  { label: "Cómo funciona", href: "#como-funciona" },
   { label: "Características", href: "#caracteristicas" },
 ]
 
@@ -47,13 +46,12 @@ export function Navbar() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <ThemeToggle />
           <Button
             asChild
             size="sm"
             className="hidden px-5 text-sm font-semibold md:inline-flex"
           >
-            <Link href="/auth/login">Iniciar Sesión</Link>
+            <Link href="/auth/login">Iniciar sesión</Link>
           </Button>
           <Button
             variant="ghost"

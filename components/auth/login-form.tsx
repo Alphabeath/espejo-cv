@@ -102,9 +102,6 @@ export function LoginForm({
                 <Button type="submit" disabled={isLoading}>
                   {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
                 </Button>
-                <Button variant="outline" type="button" disabled={isLoading}>
-                  Iniciar sesión con Google
-                </Button>
                 <FieldDescription className="text-center text-ec-on-surface-variant">
                   ¿No tienes una cuenta? <Link href="/auth/register">Regístrate</Link>
                 </FieldDescription>

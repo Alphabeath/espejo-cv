@@ -11,12 +11,13 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { cn, formatDuration } from "@/lib/utils"
 
 export type HistoryEntry = {
   sessionId: string
   role: string
   date: string
+  durationInSeconds?: number
   score: number
   status: string
   startedAt: string
@@ -137,11 +138,18 @@ function HistoryCard({ entry }: { entry: HistoryEntry }) {
         <p className="truncate text-sm font-semibold text-ec-on-surface">
           {entry.role}
         </p>
-        <p className="text-xs text-ec-on-surface-variant">{entry.date}</p>
-      </div>
-
-      <div className="flex shrink-0 items-center gap-3">
-        {entry.score > 0 && <MiniScoreBar score={entry.score} />}
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-ec-on-surface-variant">{entry.date}</p>
+            {entry.durationInSeconds ? (
+              <>
+                <span className="text-ec-outline-variant">·</span>
+                <p className="text-xs text-ec-on-surface-variant flex items-center gap-1">
+                  <Clock className="size-3" />
+                  {formatDuration(entry.durationInSeconds)}
+                </p>
+              </>
+            ) : null}
+          </div>
         <StatusBadge status={entry.status} />
         <ArrowRight className="size-4 text-ec-outline-variant opacity-0 transition-opacity group-hover:opacity-100" />
       </div>

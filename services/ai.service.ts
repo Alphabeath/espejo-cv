@@ -208,9 +208,7 @@ function buildInterviewFeedbackPrompt({
 		"- Coherencia con la experiencia declarada en el CV",
 		"",
 		"Devuelve:",
-		"- overallScore: puntaje global 0–100",
 		"- summary: resumen general del desempeño en 2-3 oraciones",
-		"- confidence: confianza de tu análisis 0–100",
 		"- strengths: de 2 a 4 fortalezas detectadas, cada una con label corto y descripción",
 		"- gaps: de 1 a 4 brechas o áreas de mejora, cada una con label y descripción",
 		"- recommendations: de 2 a 4 recomendaciones accionables, cada una con label y descripción",
@@ -421,76 +419,69 @@ export type FeedbackItem = {
 export type InterviewFeedback = {
 	overallScore: number
 	summary: string
-	confidence: number
-	strengths: FeedbackItem[]
-	gaps: FeedbackItem[]
-	recommendations: FeedbackItem[]
-	turnScores: InterviewTurnFeedback[]
+        strengths: FeedbackItem[]
+        gaps: FeedbackItem[]
+        recommendations: FeedbackItem[]
+        turnScores: InterviewTurnFeedback[]
 }
 
 const feedbackItemSchema = z.object({
-	label: z.string().min(1).max(80),
-	description: z.string().min(1).max(300),
+        label: z.string().min(1).max(80),
+        description: z.string().min(1).max(300),
 })
 
 const feedbackItemProviderSchema = z.object({
-	label: z.string(),
-	description: z.string(),
+        label: z.string(),
+        description: z.string(),
 })
 
 const interviewFeedbackSchema = z.object({
-	overallScore: z.number().int().min(0).max(100),
-	summary: z.string().min(10).max(800),
-	confidence: z.number().int().min(0).max(100),
-	strengths: z.array(feedbackItemSchema).min(1).max(5),
-	gaps: z.array(feedbackItemSchema).min(1).max(5),
-	recommendations: z.array(feedbackItemSchema).min(1).max(5),
-	turnScores: z
-		.array(
-			z.object({
-				turnIndex: z.number().int().min(0),
-				score: z.number().int().min(0).max(100),
-				feedback: z.string().min(1).max(400),
-			}),
-		)
-		.min(1),
+        summary: z.string().min(10).max(800),
+        strengths: z.array(feedbackItemSchema).min(1).max(5),
+        gaps: z.array(feedbackItemSchema).min(1).max(5),
+        recommendations: z.array(feedbackItemSchema).min(1).max(5),
+        turnScores: z
+                .array(
+                        z.object({
+                                turnIndex: z.number().int().min(0),
+                                score: z.number().int().min(0).max(100),
+                                feedback: z.string().min(1).max(400),
+                        }),
+                )
+                .min(1),
 })
 
 const interviewFeedbackProviderSchema = z.object({
-	overallScore: z.number().int().min(0).max(100),
-	summary: z.string(),
-	confidence: z.number().int().min(0).max(100),
-	strengths: z.array(feedbackItemProviderSchema).min(1).max(5),
-	gaps: z.array(feedbackItemProviderSchema).min(1).max(5),
-	recommendations: z.array(feedbackItemProviderSchema).min(1).max(5),
-	turnScores: z
-		.array(
-			z.object({
-				turnIndex: z.number().int().min(0),
-				score: z.number().int().min(0).max(100),
-				feedback: z.string(),
-			}),
-		)
-		.min(1),
+        summary: z.string(),
+        strengths: z.array(feedbackItemProviderSchema).min(1).max(5),
+        gaps: z.array(feedbackItemProviderSchema).min(1).max(5),
+        recommendations: z.array(feedbackItemProviderSchema).min(1).max(5),
+        turnScores: z
+                .array(
+                        z.object({
+                                turnIndex: z.number().int().min(0),
+                                score: z.number().int().min(0).max(100),
+                                feedback: z.string(),
+                        }),
+                )
+                .min(1),
 })
 
 function getInterviewFeedbackGenerationSchema(provider: InterviewObjectProvider) {
-	return provider === "cerebras"
-		? interviewFeedbackProviderSchema
-		: interviewFeedbackSchema
+        return provider === "cerebras"
+                ? interviewFeedbackProviderSchema
+                : interviewFeedbackSchema
 }
 
 function sanitizeInterviewFeedbackObject(
-	object: z.infer<typeof interviewFeedbackProviderSchema>,
+        object: z.infer<typeof interviewFeedbackProviderSchema>,
 ) {
-	return interviewFeedbackSchema.parse({
-		overallScore: object.overallScore,
-		summary: truncateText(normalizeWhitespace(object.summary), 800),
-		confidence: object.confidence,
-		strengths: object.strengths.map((item) => ({
-			label: truncateText(normalizeWhitespace(item.label), 80),
-			description: truncateText(normalizeWhitespace(item.description), 300),
-		})),
+        return interviewFeedbackSchema.parse({
+                summary: truncateText(normalizeWhitespace(object.summary), 800),
+                strengths: object.strengths.map((item) => ({
+                        label: truncateText(normalizeWhitespace(item.label), 80),
+                        description: truncateText(normalizeWhitespace(item.description), 300),
+                })),
 		gaps: object.gaps.map((item) => ({
 			label: truncateText(normalizeWhitespace(item.label), 80),
 			description: truncateText(normalizeWhitespace(item.description), 300),
@@ -553,9 +544,8 @@ export async function generateInterviewFeedback({
 	const parsedObject = sanitizeInterviewFeedbackObject(object)
 
 	return {
-		overallScore: parsedObject.overallScore,
-		summary: parsedObject.summary,
-		confidence: parsedObject.confidence,
+                overallScore: Math.round(parsedObject.turnScores.reduce((acc, t) => acc + t.score, 0) / parsedObject.turnScores.length),
+                summary: parsedObject.summary,
 		strengths: parsedObject.strengths.map((s) => ({
 			label: s.label,
 			description: s.description,

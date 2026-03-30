@@ -11,7 +11,7 @@ const fontMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
 export const metadata = {
   title: "espejoCV — Claridad en tu Entrevista",
   description:
-    "Sube tu CV y la descripción del puesto para iniciar una simulación de entrevista realista impulsada por IA. Gana la confianza necesaria para conseguir el rol.",
+    "Sube tu CV y la descripción del puesto para iniciar una simulación de entrevista realista impulsada por IA. Gana la seguridad necesaria para conseguir el rol.",
 }
 
 export default function RootLayout({

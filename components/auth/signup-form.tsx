@@ -89,7 +89,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
               <Input
                 id="name"
                 type="text"
-                placeholder="John Doe"
+                placeholder="Midudev"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 required
@@ -100,20 +100,18 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
               <Input
                 id="email"
                 type="email"
-                placeholder="m@example.com"
+                placeholder="correo@ejemplo.com"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
               />
-              <FieldDescription>
-                Usaremos esto para contactarte. No compartiremos tu correo electrónico con nadie más.
-              </FieldDescription>
             </Field>
             <Field>
               <FieldLabel htmlFor="password">Contraseña</FieldLabel>
               <Input
                 id="password"
                 type="password"
+                minLength={8}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
@@ -129,6 +127,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
               <Input
                 id="confirm-password"
                 type="password"
+                minLength={8}
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 required
@@ -139,9 +138,6 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
               <Field>
                 <Button type="submit" disabled={isLoading}>
                   {isLoading ? "Creando cuenta..." : "Crear cuenta"}
-                </Button>
-                <Button variant="outline" type="button" disabled={isLoading}>
-                  Registrarse con Google
                 </Button>
                 <FieldDescription className="px-6 text-center text-ec-on-surface-variant">
                   ¿Ya tienes una cuenta? <Link href="/auth/login">Inicia sesión</Link>

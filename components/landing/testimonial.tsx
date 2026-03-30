@@ -39,7 +39,7 @@ const testimonials = [
 const stats = [
   {
     value: "94%",
-    label: "Aumento en confianza",
+    label: "Mejora del desempeño",
     description:
       "Los candidatos se sienten significativamente más preparados después de solo tres sesiones.",
   },

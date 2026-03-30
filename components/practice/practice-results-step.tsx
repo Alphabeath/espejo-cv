@@ -7,6 +7,7 @@ import {
   ArrowRight,
   RotateCcw,
   TrendingUp,
+  Clock,
   MessageSquare,
   CheckCircle2,
   AlertCircle,
@@ -174,7 +175,7 @@ export function PracticeResultsStep({
               </span>
               <span className="text-ec-outline-variant">·</span>
               <span className="flex items-center gap-1">
-                <TrendingUp className="size-3.5" />
+                <Clock className="size-3.5" />
                 {minutes}m {seconds}s
               </span>
             </div>

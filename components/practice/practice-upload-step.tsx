@@ -64,12 +64,14 @@ export function PracticeUploadStep({
   }, [])
 
   useEffect(() => {
+    if (isLoadingStoredCvs) return
+
     setCvSource(hasStoredCvs ? "stored" : "upload")
     setSelectedStoredCvId(null)
     setCvFile(null)
     setSelectionError(null)
     setIsResolvingCv(false)
-  }, [hasStoredCvs, storedCvIdsKey])
+  }, [hasStoredCvs, storedCvIdsKey, isLoadingStoredCvs])
 
   async function resolveStoredCv(cv: StoredCvDocument) {
     setSelectionError(null)
@@ -186,7 +188,7 @@ export function PracticeUploadStep({
               Tu currículum <span className="text-ec-on-surface-variant font-normal">(PDF)</span>
             </Label>
 
-            {(hasStoredCvs || isLoadingStoredCvs) && (
+              {isLoadingStoredCvs ? null : hasStoredCvs && (
               <div className="grid grid-cols-2 gap-2 rounded-2xl bg-ec-surface-container-low p-1">
                 <button
                   type="button"
@@ -215,14 +217,14 @@ export function PracticeUploadStep({
               </div>
             )}
 
-            {shouldShowStoredCvList ? (
-              <div className="flex min-h-80 max-h-94 flex-col gap-3 overflow-y-auto rounded-2xl bg-ec-surface-container-lowest p-4 shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]">
-                {isLoadingStoredCvs ? (
-                  <div className="flex min-h-56 items-center justify-center gap-2 rounded-2xl bg-ec-surface-container-low px-4 text-sm text-ec-on-surface-variant">
-                    <Loader2 className="size-4 animate-spin" />
-                    Cargando tus CVs…
-                  </div>
-                ) : storedCvList.length === 0 ? (
+              {isLoadingStoredCvs ? (
+                <div className="flex min-h-80 flex-col items-center justify-center gap-3 rounded-2xl border border-ec-outline-variant/10 bg-ec-surface-container-lowest px-4 text-center shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]">
+                  <Loader2 className="size-5 animate-spin text-ec-primary" />
+                  <p className="text-sm font-medium text-ec-on-surface">Cargando información...</p>
+                </div>
+              ) : shouldShowStoredCvList ? (
+                <div className="flex min-h-80 max-h-94 flex-col gap-3 overflow-y-auto rounded-2xl bg-ec-surface-container-lowest p-4 shadow-[0_0_0_1.5px_oklch(0.57_0.01_210/0.15)]">
+                  {storedCvList.length === 0 ? (
                   <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl bg-ec-surface-container-low px-4 text-center">
                     <div className="flex size-12 items-center justify-center rounded-2xl bg-ec-surface-container-high text-ec-on-surface-variant">
                       <FileText className="size-5" />

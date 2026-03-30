@@ -250,8 +250,8 @@ export default function PracticePage() {
   )
 
   /** Step 2 → 3: user finishes interview */
-  const handleFinish = useCallback(async () => {
-    setIsFinishing(true)
+  const handleFinish = useCallback(async (durationInSeconds?: number) => {
+    setIsFinishing(true);
 
     try {
       if (sessionId) {
@@ -297,7 +297,7 @@ export default function PracticePage() {
         strengths: JSON.stringify(feedbackData.strengths),
         gaps: JSON.stringify(feedbackData.gaps),
         recommendations: JSON.stringify(feedbackData.recommendations),
-        confidence: feedbackData.confidence,
+        durationInSeconds: durationInSeconds ?? 0,
       })
 
       await Promise.all(
@@ -333,7 +333,7 @@ export default function PracticePage() {
         score: feedbackData.overallScore ?? 0,
         jobPosition: displayJobTitle,
         totalQuestions: questions.length,
-        duration: 0,
+        duration: durationInSeconds ?? 0,
         summary: feedbackData.summary ?? "",
         feedback: [...strengths, ...improvements],
       })

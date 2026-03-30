@@ -30,6 +30,7 @@ type ReportRow = Models.Row & {
   gaps?: string
   recommendations?: string
   confidence?: number
+  durationInSeconds?: number
   generatedAt: string
   modelVersion?: string
 }
@@ -79,13 +80,14 @@ export type SaveReportInput = {
   strengths: string
   gaps: string
   recommendations: string
-  confidence: number
+  durationInSeconds?: number
 }
 
 export type FeedbackHistoryEntry = {
   sessionId: string
   role: string
   date: string
+  durationInSeconds?: number
   score: number
   status: string
   startedAt: string
@@ -116,9 +118,9 @@ export type SessionDetail = {
   sessionId: string
   jobPosition: string
   date: string
+  durationInSeconds?: number
   overallScore: number
   summary: string
-  confidence: number
   strengths: FeedbackItemParsed[]
   gaps: FeedbackItemParsed[]
   recommendations: FeedbackItemParsed[]
@@ -277,7 +279,7 @@ export async function saveReport(
       strengths: report.strengths,
       gaps: report.gaps,
       recommendations: report.recommendations,
-      confidence: report.confidence,
+        durationInSeconds: report.durationInSeconds,
       generatedAt: new Date().toISOString(),
     },
     permissions: userPermissions,
@@ -359,6 +361,7 @@ export async function getUserFeedbackSummary(): Promise<UserFeedbackSummary> {
       role: jobOffer?.title ?? "Sesión de práctica",
       date: formatDate(s.startedAt),
       score: report?.overallScore ?? 0,
+        durationInSeconds: report?.durationInSeconds ?? 0,
       status: s.status,
       startedAt: s.startedAt,
     }
@@ -465,9 +468,9 @@ export async function getSessionDetail(
     sessionId,
     jobPosition,
     date: formatDate(session.startedAt),
-    overallScore: report.overallScore,
+      durationInSeconds: report.durationInSeconds ?? 0,
+      overallScore: turns.length > 0 ? Math.round(turns.reduce((acc, t) => acc + t.score, 0) / turns.length) : report.overallScore,
     summary: report.summary,
-    confidence: report.confidence ?? 0,
     strengths: safeParse(report.strengths),
     gaps: safeParse(report.gaps),
     recommendations: safeParse(report.recommendations),

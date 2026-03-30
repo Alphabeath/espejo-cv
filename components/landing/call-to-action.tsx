@@ -44,7 +44,7 @@ export function CallToAction() {
               tu claridad profesional?
             </h2>
             <p className="mx-auto mb-10 max-w-xl text-lg text-white/70">
-              Únete a los candidatos que transformaron sus nervios en confianza.
+              Únete a los candidatos que transformaron sus nervios en seguridad.
               Tu próxima entrevista comienza aquí.
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -55,17 +55,9 @@ export function CallToAction() {
                 className="group bg-white! px-8 text-base font-bold text-ec-primary! shadow-lg hover:bg-white/95!"
               >
                 <Link href="/auth/login">
-                  Comenzar Ahora — Es Gratis
+                  Comenzar ahora
                   <ArrowRight className="ml-1 size-4 transition-transform group-hover:translate-x-1" />
                 </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="border-white/20 bg-transparent px-8 text-base text-white hover:bg-white/10 hover:text-white"
-              >
-                <Link href="#como-funciona">Saber Más</Link>
               </Button>
             </div>
           </motion.div>

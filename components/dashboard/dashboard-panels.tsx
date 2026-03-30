@@ -1,5 +1,6 @@
 import { ArrowRight, CalendarDays, TrendingUp } from "lucide-react"
 import type { ReactNode } from "react"
+import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 
@@ -7,6 +8,8 @@ export function DashboardPanels({
   insightTitle = "¿Listo para mejorar tu score?",
   insightDescription =
     'Analiza tu sesión con peor desempeño para identificar áreas de mejora y optimizar tu preparación.',
+  insightLink = "/dashboard/history",
+  insightButtonText = "Ver análisis de tu peor sesión reciente",
   nextGoalTitle = "Próxima meta",
   nextGoalDescription = (
     <>
@@ -16,6 +19,8 @@ export function DashboardPanels({
 }: {
   insightTitle?: string
   insightDescription?: string
+  insightLink?: string
+  insightButtonText?: string
   nextGoalTitle?: string
   nextGoalDescription?: ReactNode
 }) {
@@ -32,24 +37,37 @@ export function DashboardPanels({
           {insightDescription}
         </p>
         <Button
+          asChild
           variant="outline"
           className="mt-5 h-9 rounded-full border border-white/20 bg-white/10 px-5 text-sm text-white hover:bg-white/15"
         >
-          Ver análisis de tu peor sesión reciente
-          <ArrowRight className="size-4" />
+          <Link href={insightLink}>
+            {insightButtonText}
+            <ArrowRight className="size-4" />
+          </Link>
         </Button>
       </section>
 
-      <section className="flex flex-col items-center justify-center rounded-2xl bg-ec-surface-container p-6 text-center">
-        <div className="mb-4 flex size-11 items-center justify-center rounded-full bg-ec-primary-container">
-          <CalendarDays className="size-5 text-ec-primary" />
+      <section className="relative overflow-hidden rounded-2xl bg-ec-surface-container-high p-6 text-ec-on-surface shadow-sm">
+        <div className="pointer-events-none absolute right-4 top-4 text-ec-primary/5">
+          <CalendarDays className="size-20" />
         </div>
-        <h3 className="text-base font-semibold text-ec-on-surface">
+        <h3 className="text-xl font-bold leading-snug">
           {nextGoalTitle}
         </h3>
-        <p className="mt-2 max-w-xs text-sm leading-relaxed text-ec-on-surface-variant">
+        <p className="mt-3 text-sm leading-relaxed text-ec-on-surface-variant max-w-[85%]">
           {nextGoalDescription}
         </p>
+        <Button
+          asChild
+          variant="outline"
+          className="mt-5 h-9 rounded-full border-ec-on-surface-variant/20 bg-ec-surface px-5 text-sm text-ec-primary hover:bg-ec-surface-container hover:text-ec-primary/90"
+        >
+          <Link href="/dashboard/practice">
+            Iniciar nueva simulación
+            <ArrowRight className="size-4" />
+          </Link>
+        </Button>
       </section>
     </div>
   )

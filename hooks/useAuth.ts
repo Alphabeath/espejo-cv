@@ -31,7 +31,9 @@ const AUTH_ERROR_MESSAGES = {
 } as const
 
 function getErrorMessage(error: unknown, fallback: string) {
-	return error ? fallback : ""
+        if (error && typeof error === "object" && "message" in error) {
+                return (error as Error).message || fallback
+        }
 }
 
 export function useAuth() {

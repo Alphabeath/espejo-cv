@@ -1,7 +1,6 @@
 "use client"
 
-import Image from "next/image"
-import { Brain, Mic, MessageSquareText, Target, Shield, Zap } from "lucide-react"
+import { Brain, Mic, MessageSquareText, Target, Shield, Zap, Activity, Award } from "lucide-react"
 import * as motion from "motion/react-client"
 
 import { Badge } from "@/components/ui/badge"
@@ -13,11 +12,11 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-const feedbackTags = ["Análisis de tono", "Puntuación de confianza", "Áreas de mejora"]
+const feedbackTags = ["Análisis de tono", "Puntaje general", "Áreas de mejora"]
 
 export function FeaturesBento() {
   return (
-    <section className="py-24 md:py-32">
+    <section id="caracteristicas" className="py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-8">
         {/* Section header */}
         <motion.div
@@ -72,20 +71,29 @@ export function FeaturesBento() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="max-w-md leading-relaxed text-ec-on-surface-variant">
+                <p className="max-w-md leading-relaxed text-ec-on-surface-variant mb-6">
                   Nuestro motor analiza tu tono, contenido y estructura para
-                  proporcionar perspectivas psicológicas sobre cómo eres
-                  percibido por los entrevistadores. Identifica patrones,
-                  muletillas y oportunidades de mejora.
+                  proporcionar perspectivas sobre cómo eres
+                  percibido. Identifica patrones y oportunidades de mejora.
                 </p>
-                <div className="overflow-hidden rounded-xl">
-                  <Image
-                    src="/feedback-visual.png"
-                    alt="Visualización de análisis de feedback con IA"
-                    width={800}
-                    height={200}
-                    className="h-48 w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-                  />
+                {/* Visual mockup replacement for /feedback-visual.png */}
+                <div className="relative h-48 w-full overflow-hidden rounded-xl bg-ec-surface-container-high/30 border border-ec-outline-variant/10 p-4 flex gap-4">
+                  {/* Mock Charts */}
+                  <div className="flex-1 flex flex-col justify-end gap-2 h-full">
+                    <div className="w-full flex items-end gap-2 h-full opacity-60">
+                       <motion.div initial={{ height: 0 }} whileInView={{ height: '40%' }} className="flex-1 bg-ec-primary rounded-t-sm" />
+                       <motion.div initial={{ height: 0 }} whileInView={{ height: '70%' }} className="flex-1 bg-ec-secondary rounded-t-sm" />
+                       <motion.div initial={{ height: 0 }} whileInView={{ height: '50%' }} className="flex-1 bg-ec-tertiary rounded-t-sm" />
+                       <motion.div initial={{ height: 0 }} whileInView={{ height: '90%' }} className="flex-1 bg-ec-primary rounded-t-sm" />
+                       <motion.div initial={{ height: 0 }} whileInView={{ height: '60%' }} className="flex-1 bg-ec-secondary rounded-t-sm" />
+                    </div>
+                  </div>
+                  {/* Mock Score Card */}
+                  <div className="w-40 rounded-lg bg-ec-surface-container shadow-sm p-4 flex flex-col justify-center items-center gap-2">
+                    <Activity className="size-6 text-ec-primary" />
+                    <div className="text-xl font-bold">92/100</div>
+                    <div className="text-xs text-ec-on-surface-variant">Puntaje Global</div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -114,24 +122,37 @@ export function FeaturesBento() {
                   className="mb-4 text-2xl font-bold text-white"
                   style={{ fontFamily: "var(--font-headline)" }}
                 >
-                  Escenarios realistas
+                  Escenarios por voz
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="leading-relaxed opacity-80">
-                  Desde profundizaciones técnicas hasta preguntas de
-                  comportamiento inesperadas, simulamos la presión real de una
-                  ronda final de entrevistas.
+                <p className="leading-relaxed opacity-80 pb-4">
+                  Desde preguntas técnicas hasta situaciones de
+                  comportamiento, simulamos la presión real de una
+                  entrevista usando reconocimiento de voz.
                 </p>
               </CardContent>
-              <CardFooter className="block pt-4">
-                <Image
-                  src="/interview-ui.png"
-                  alt="Interfaz de entrevista realista"
-                  width={400}
-                  height={180}
-                  className="w-full max-h-44 rounded-lg object-cover opacity-90 shadow-sm transition-transform duration-500 group-hover:scale-[1.03]"
-                />
+              <CardFooter className="block pb-6">
+                {/* Visual mockup replacement for /interview-ui.png */}
+                <div className="w-full h-24 rounded-lg bg-black/20 overflow-hidden flex flex-col justify-center items-center gap-3 border border-white/10 shadow-inner">
+                  <motion.div 
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} 
+                    transition={{ repeat: Infinity, duration: 2 }}
+                    className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center"
+                  >
+                    <Mic className="size-5 text-white" />
+                  </motion.div>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <motion.div 
+                        key={i} 
+                        animate={{ height: ["4px", "12px", "4px"] }} 
+                        transition={{ repeat: Infinity, duration: 1, delay: i * 0.1 }}
+                        className="w-1 bg-white/60 rounded-full" 
+                      />
+                    ))}
+                  </div>
+                </div>
               </CardFooter>
             </Card>
           </motion.div>
@@ -153,7 +174,7 @@ export function FeaturesBento() {
                   whileHover={{ scale: 1.05 }}
                   className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-white/50"
                 >
-                  <MessageSquareText className="h-6 w-6 text-ec-tertiary" />
+                  <Award className="h-6 w-6 text-ec-tertiary" />
                 </motion.div>
                 <CardTitle
                   className="mb-4 text-2xl font-bold"
@@ -204,13 +225,13 @@ export function FeaturesBento() {
                   },
                   {
                     icon: Shield,
-                    title: "Datos seguros",
-                    desc: "Tu CV y respuestas son privados y nunca se comparten.",
+                    title: "Datos en tu control",
+                    desc: "Tu CV y respuestas son analizados de forma segura.",
                   },
                   {
                     icon: Zap,
                     title: "Rápido e intuitivo",
-                    desc: "Empieza en menos de 4 minutos. Sin pasos innecesarios.",
+                    desc: "Empieza a practicar sin pasos ni configuraciones pesadas.",
                   },
                 ].map((item) => (
                   <div key={item.title} className="space-y-3">
