@@ -56,6 +56,15 @@ export function PracticeInterviewStep({
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const autoFinishTriggered = useRef(false)
+
+  // Auto-finish once the interview is complete
+  useEffect(() => {
+    if (isInterviewComplete && !isFinishing && !autoFinishTriggered.current) {
+      autoFinishTriggered.current = true
+      onFinish(elapsedSeconds)
+    }
+  }, [isInterviewComplete, isFinishing, elapsedSeconds, onFinish])
 
   useEffect(() => {
     if (isInterviewComplete || isPreparing || isFinishing) return
@@ -128,7 +137,7 @@ export function PracticeInterviewStep({
   const promptText = effectivePreparing
     ? ""
     : isInterviewComplete
-    ? "La práctica terminó. Revisa la evaluación generada para esta simulación."
+    ? "La práctica terminó. Estamos generando el feedback para esta simulación."
     : currentQuestion
 
   const isPersonaListening = isListening && !effectivePreparing && !isAiTyping && !isInterviewComplete
@@ -308,7 +317,7 @@ export function PracticeInterviewStep({
                 effectivePreparing
                   ? "Estamos preparando la entrevista..."
                   : isInterviewComplete
-                  ? "La entrevista terminó. Ya puedes revisar los resultados."
+                  ? "La entrevista terminó. Generando tu feedback..."
                   : "Tu respuesta aparecerá aquí mientras hablas o escribes."
               }
               disabled={effectivePreparing || isAiTyping || isTranscribing || isInterviewComplete || isFinishing}
@@ -333,7 +342,7 @@ export function PracticeInterviewStep({
                   ) : (
                     <SkipForward className="size-4" />
                   )}
-                  {isFinishing ? "Calculando…" : "Ver resultados"}
+                  {isFinishing ? "Generando feedback…" : "Ver resultados"}
                 </Button>
               ) : (
                 <Button
