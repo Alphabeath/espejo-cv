@@ -138,20 +138,24 @@ function HistoryCard({ entry }: { entry: HistoryEntry }) {
         <p className="truncate text-sm font-semibold text-ec-on-surface">
           {entry.role}
         </p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <p className="text-xs text-ec-on-surface-variant">{entry.date}</p>
-            {entry.durationInSeconds ? (
-              <>
-                <span className="text-ec-outline-variant">·</span>
-                <p className="text-xs text-ec-on-surface-variant flex items-center gap-1">
-                  <Clock className="size-3" />
-                  {formatDuration(entry.durationInSeconds)}
-                </p>
-              </>
-            ) : null}
-          </div>
+        <div className="flex items-center gap-2 mt-0.5">
+          <p className="text-xs text-ec-on-surface-variant">{entry.date}</p>
+          {entry.durationInSeconds ? (
+            <>
+              <span className="text-ec-outline-variant">·</span>
+              <p className="text-xs text-ec-on-surface-variant flex items-center gap-1">
+                <Clock className="size-3" />
+                {formatDuration(entry.durationInSeconds)}
+              </p>
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center justify-end gap-4 ml-auto">
+        {entry.status === "completed" && <MiniScoreBar score={entry.score} />}
         <StatusBadge status={entry.status} />
-        <ArrowRight className="size-4 text-ec-outline-variant opacity-0 transition-opacity group-hover:opacity-100" />
+        <ArrowRight className="size-4 text-ec-outline-variant opacity-0 transition-[opacity,transform] group-hover:translate-x-1 group-hover:opacity-100" />
       </div>
     </div>
   )
