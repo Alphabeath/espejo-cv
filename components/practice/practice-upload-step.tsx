@@ -81,6 +81,7 @@ export function PracticeUploadStep({
 
     try {
       const response = await fetch(getCvDownloadUrl(cv.id).toString(), {
+        credentials: "include",
         headers: getFallbackHeaders(),
       })
 

@@ -61,16 +61,19 @@ export default function Dashboard() {
         : "Sube tu CV y completa una simulación para empezar a construir historial y métricas reales."
 
     return (
-      <main className="min-h-svh overflow-y-auto px-6 py-8 md:px-10 ">
+      <main className="animate-fade-in min-h-svh overflow-y-auto px-6 py-8 md:px-10">
         <DashboardHeader metrics={metrics} />
-        <DashboardPanels
-          insightTitle={insightTitle}
-          insightDescription={insightDescription}
-          insightLink={insightLink}
-          insightButtonText={insightButtonText}
-          nextGoalTitle={nextGoalTitle}
-          nextGoalDescription={nextGoalDescription}
-        />
+        <div className="mb-8">
+          <DashboardPanels
+            insightTitle={insightTitle}
+            insightDescription={insightDescription}
+            insightLink={insightLink}
+            insightButtonText={insightButtonText}
+            nextGoalTitle={nextGoalTitle}
+            nextGoalDescription={nextGoalDescription}
+            showActionButtons={hasEntries}
+          />
+        </div>
       {isLoading ? (
         <section className="mb-8 rounded-2xl bg-ec-surface-container-low px-6 py-10 text-sm text-ec-on-surface-variant">
           Cargando historial y métricas del dashboard...

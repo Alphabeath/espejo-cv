@@ -54,7 +54,7 @@ export function DashboardSidebar({
   async function handleLogout() {
     try {
       await logout()
-      router.replace("/auth/login")
+      router.replace("/")
     } catch {
       return
     }

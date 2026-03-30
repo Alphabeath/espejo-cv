@@ -16,6 +16,7 @@ export function DashboardPanels({
       Tu próxima simulación programada es para el rol de <strong>Product Lead</strong> mañana a las 10:00 AM.
     </>
   ),
+  showActionButtons = true,
 }: {
   insightTitle?: string
   insightDescription?: string
@@ -23,6 +24,7 @@ export function DashboardPanels({
   insightButtonText?: string
   nextGoalTitle?: string
   nextGoalDescription?: ReactNode
+  showActionButtons?: boolean
 }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -36,16 +38,18 @@ export function DashboardPanels({
         <p className="mt-3 text-sm leading-relaxed text-white/75">
           {insightDescription}
         </p>
-        <Button
-          asChild
-          variant="outline"
-          className="mt-5 h-9 rounded-full border border-white/20 bg-white/10 px-5 text-sm text-white hover:bg-white/15"
-        >
-          <Link href={insightLink}>
-            {insightButtonText}
-            <ArrowRight className="size-4" />
-          </Link>
-        </Button>
+        {showActionButtons && (
+          <Button
+            asChild
+            variant="outline"
+            className="mt-5 h-9 rounded-full border border-white/20 bg-white/10 px-5 text-sm text-white hover:bg-white/15"
+          >
+            <Link href={insightLink}>
+              {insightButtonText}
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+        )}
       </section>
 
       <section className="relative overflow-hidden rounded-2xl bg-ec-surface-container-high p-6 text-ec-on-surface shadow-sm">
@@ -58,16 +62,18 @@ export function DashboardPanels({
         <p className="mt-3 text-sm leading-relaxed text-ec-on-surface-variant max-w-[85%]">
           {nextGoalDescription}
         </p>
-        <Button
-          asChild
-          variant="outline"
-          className="mt-5 h-9 rounded-full border-ec-on-surface-variant/20 bg-ec-surface px-5 text-sm text-ec-primary hover:bg-ec-surface-container hover:text-ec-primary/90"
-        >
-          <Link href="/dashboard/practice">
-            Iniciar nueva simulación
-            <ArrowRight className="size-4" />
-          </Link>
-        </Button>
+        {showActionButtons && (
+          <Button
+            asChild
+            variant="outline"
+            className="mt-5 h-9 rounded-full border-ec-on-surface-variant/20 bg-ec-surface px-5 text-sm text-ec-primary hover:bg-ec-surface-container hover:text-ec-primary/90"
+          >
+            <Link href="/dashboard/practice">
+              Iniciar nueva simulación
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+        )}
       </section>
     </div>
   )
