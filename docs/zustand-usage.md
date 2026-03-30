@@ -14,7 +14,6 @@ En este repositorio ya existen estas capas:
 
 - React Query para auth y sincronización con Appwrite en [hooks/useAuth.ts](../hooks/useAuth.ts).
 - `useState` para UI local en formularios y menús, por ejemplo en [app/dashboard/layout.tsx](../app/dashboard/layout.tsx).
-- `next-themes` para el tema global en [components/theme-provider.tsx](../components/theme-provider.tsx).
 
 Por eso, Zustand no debería reemplazar esas piezas. Debe cubrir huecos donde el estado local empieza a duplicarse o a saltar entre pantallas.
 

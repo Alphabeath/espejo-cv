@@ -75,7 +75,6 @@ Hoy el paso 1 sí usa backend real para analizar el CV y el puesto, y el dictado
 - shadcn/ui.
 - Radix UI.
 - Motion.
-- next-themes.
 
 ### Estado y datos
 
