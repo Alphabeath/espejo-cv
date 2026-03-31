@@ -99,10 +99,30 @@ export function LoginForm({
                 />
               </Field>
               <Field>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
-                </Button>
-                <FieldDescription className="text-center text-ec-on-surface-variant">
+                <div className="flex flex-col gap-3">
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isLoading}
+                    onClick={async () => {
+                      setEmail("midudev@dev.com")
+                      setPassword("12345678")
+                      try {
+                        await login({ email: "midudev@dev.com", password: "12345678" })
+                        router.replace(searchParams.get("redirectTo") || "/dashboard")
+                      } catch {
+                        // Error handled by useAuth hook
+                      }
+                    }}
+                    className="border-ec-primary text-ec-primary hover:bg-ec-primary/10 transition-colors"
+                  >
+                    Entrar con cuenta Demo
+                  </Button>
+                </div>
+                <FieldDescription className="text-center text-ec-on-surface-variant mt-2">
                   ¿No tienes una cuenta? <Link href="/auth/register">Regístrate</Link>
                 </FieldDescription>
               </Field>
