@@ -248,13 +248,20 @@ async function buildHistoryEntry(session: CvSessionRow): Promise<DashboardHistor
 	}
 }
 
-function buildSummary(entries: DashboardHistoryEntry[]): DashboardSummary {
-	// El resumen se deriva del historial ya normalizado para evitar recalcular sobre rows crudas.
-	// Eso hace que la lógica quede aislada de Appwrite y dependa solo de un shape interno estable.
-	const simulations = entries.length
-	const scores = entries.map((entry) => entry.score).filter((score) => score > 0)
-	const completedSessions = entries.filter((entry) => entry.status === "completed").length
-	const activeSessions = entries.filter(
+function buildSummary(sessions: CvSessionRow[]): DashboardSummary {
+	// El resumen se deriva de TODAS las sesiones de Appwrite (sin límite visual).
+	// Extraemos directamente de las rows para evitar llamadas a Storage en métricas globales.
+	const simulations = sessions.length
+	
+	const scores = sessions
+		.map((session) => {
+			const report = getLoadedRelation(session.report)
+			return toScore(report?.overallScore)
+		})
+		.filter((score) => score > 0)
+
+	const completedSessions = sessions.filter((entry) => entry.status === "completed").length
+	const activeSessions = sessions.filter(
 		(entry) =>
 			entry.status === "draft" ||
 			entry.status === "analyzing" ||
@@ -269,7 +276,7 @@ function buildSummary(entries: DashboardHistoryEntry[]): DashboardSummary {
 		simulations,
 		activeSessions,
 		completedSessions,
-		latestScore: entries[0] ? entries[0].score : null,
+		latestScore: scores.length > 0 ? scores[0] : null,
 	}
 }
 
@@ -295,11 +302,15 @@ export async function getDashboardDataForUser(
 	limit = 4,
 ): Promise<DashboardData> {
 	// Este es el punto de entrada principal para componer los datos de la vista.
-	// Casi cualquier pantalla del dashboard debería colgarse de esta función,
-	// porque ya entrega una estructura lista para renderizar.
-	const sessions = await listSessions(userId, limit)
-	const entries = await Promise.all(sessions.map((session) => buildHistoryEntry(session)))
-	const summary = buildSummary(entries)
+	// 1. Traemos un histórico grande (hasta 5000) para poder calcular las métricas correctas:
+	const allSessions = await listSessions(userId, 5000)
+	
+	// 2. Calculamos las métricas globales con TODAS las sesiones:
+	const summary = buildSummary(allSessions)
+
+	// 3. Limitamos solo los historiales que se van a mostrar visualmente (entries)
+	const displaySessions = allSessions.slice(0, limit)
+	const entries = await Promise.all(displaySessions.map((session) => buildHistoryEntry(session)))
 
 	return {
 		metrics: buildMetrics(summary),
