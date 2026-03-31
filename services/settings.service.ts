@@ -82,7 +82,8 @@ export async function updatePreferences(prefs: Record<string, any>) {
 // ─── CV file management ─────────────────────────────────────────────────────
 
 export async function uploadCvFile(file: File) {
-  const user = await getAccount().get()
+  const account = getAccount()
+  const user = await account.get()
 
   const permissions = [
     Permission.read(Role.user(user.$id)),
@@ -91,12 +92,40 @@ export async function uploadCvFile(file: File) {
     Permission.delete(Role.user(user.$id)),
   ]
 
-  return await getStorage().createFile(
+  const uploadedFile = await getStorage().createFile(
     CV_FILES_BUCKET_ID,
     ID.unique(),
     file,
     permissions,
   )
+
+  const prefs = user.prefs as Record<string, unknown>
+  let cvList: { id: string; isPrimary?: boolean }[] = []
+
+  if (prefs.cvList) {
+    try {
+      const parsed = typeof prefs.cvList === "string" ? JSON.parse(prefs.cvList) : prefs.cvList
+      if (Array.isArray(parsed)) {
+        cvList = parsed
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const hasPrimary = cvList.some((cv) => cv.isPrimary)
+
+  cvList.push({
+    id: uploadedFile.$id,
+    isPrimary: !hasPrimary,
+  })
+
+  await account.updatePrefs({
+    ...prefs,
+    cvList: JSON.stringify(cvList),
+  })
+
+  return uploadedFile
 }
 
 export async function deleteCvFile(fileId: string) {
