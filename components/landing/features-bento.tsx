@@ -12,8 +12,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-const feedbackTags = ["Análisis de tono", "Puntaje general", "Áreas de mejora"]
-
 export function FeaturesBento() {
   return (
     <section id="caracteristicas" className="py-24 md:py-32">
@@ -156,102 +154,70 @@ export function FeaturesBento() {
               </CardFooter>
             </Card>
           </motion.div>
+        </div>
 
-          {/* Card 3 — Personalized feedback */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{
-              duration: 0.6,
+        {/* Feature Cards Grid (Bottom) */}
+        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              icon: Award,
+              title: "Feedback accionable",
+              desc: "Recibe un informe detallado con consejos específicos sobre cómo mejorar tu comunicación profesional.",
               delay: 0.1,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-          >
-            <Card className="group h-full bg-ec-tertiary-container transition-shadow duration-500 hover:shadow-[0_28px_64px_-36px_oklch(0.27_0.015_210/0.22)]">
-              <CardHeader>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-white/50"
-                >
-                  <Award className="h-6 w-6 text-ec-tertiary" />
-                </motion.div>
-                <CardTitle
-                  className="mb-4 text-2xl font-bold"
-                  style={{ fontFamily: "var(--font-headline)" }}
-                >
-                  Feedback accionable
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="leading-relaxed text-ec-on-tertiary-container">
-                  Recibe un informe detallado después de cada sesión con consejos
-                  específicos sobre cómo mejorar tu comunicación profesional.
-                </p>
-              </CardContent>
-              <CardFooter className="flex flex-wrap gap-2">
-                {feedbackTags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant="secondary"
-                    className="h-auto bg-white/60 px-3 py-1 text-xs font-medium text-ec-tertiary"
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </CardFooter>
-            </Card>
-          </motion.div>
-
-          {/* Card 4 — Extra features row — spans 2 cols */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{
-              duration: 0.6,
+            },
+            {
+              icon: Target,
+              title: "Adaptado al rol",
+              desc: "Las preguntas se generan según el puesto y tu experiencia para lograr una entrevista muy realista.",
               delay: 0.15,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            className="md:col-span-2"
-          >
-            <Card className="h-full bg-ec-surface-container-low shadow-none">
-              <CardContent className="grid grid-cols-1 gap-8 p-8 sm:grid-cols-3">
-                {[
-                  {
-                    icon: Target,
-                    title: "Adaptado al rol",
-                    desc: "Las preguntas se generan según el puesto y tu experiencia.",
-                  },
-                  {
-                    icon: Shield,
-                    title: "Datos en tu control",
-                    desc: "Tu CV y respuestas son analizados de forma segura.",
-                  },
-                  {
-                    icon: Zap,
-                    title: "Rápido e intuitivo",
-                    desc: "Empieza a practicar sin pasos ni configuraciones pesadas.",
-                  },
-                ].map((item) => (
-                  <div key={item.title} className="space-y-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-ec-primary/8 text-ec-primary-dim">
-                      <item.icon className="h-5 w-5" />
-                    </div>
-                    <h4
-                      className="font-bold text-ec-on-surface"
-                      style={{ fontFamily: "var(--font-headline)" }}
-                    >
-                      {item.title}
-                    </h4>
-                    <p className="text-sm leading-relaxed text-ec-on-surface-variant">
-                      {item.desc}
-                    </p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
+            },
+            {
+              icon: Shield,
+              title: "Datos en tu control",
+              desc: "Tu currículum y respuestas son analizados de forma segura sin comprometer tu privacidad.",
+              delay: 0.2,
+            },
+            {
+              icon: Zap,
+              title: "Rápido e intuitivo",
+              desc: "Empieza a practicar sin pasos ni configuraciones pesadas de manera fluida y directa.",
+              delay: 0.25,
+            },
+          ].map((item) => (
+            <motion.div
+              key={item.title}
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{
+                duration: 0.6,
+                delay: item.delay,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            >
+              <Card className="group h-full border-ec-outline-variant/20 bg-ec-surface-container-lowest transition-shadow duration-500 hover:shadow-[0_28px_64px_-36px_oklch(0.27_0.015_210/0.15)]">
+                <CardHeader className="pb-3">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-ec-primary/8 text-ec-primary-dim"
+                  >
+                    <item.icon className="h-5 w-5" />
+                  </motion.div>
+                  <CardTitle
+                    className="text-xl font-bold text-ec-on-surface"
+                    style={{ fontFamily: "var(--font-headline)" }}
+                  >
+                    {item.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm leading-relaxed text-ec-on-surface-variant">
+                    {item.desc}
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>

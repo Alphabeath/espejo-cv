@@ -67,6 +67,11 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
 
     try {
       await register({name, email, password })
+      toast({
+        title: "Cuenta creada",
+        description: "Tu cuenta ha sido creada exitosamente. Por favor inicia sesión.",
+        variant: "info"
+      })
       router.push("/auth/login")
     } catch {
       return

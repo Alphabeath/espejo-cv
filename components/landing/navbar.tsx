@@ -18,7 +18,7 @@ export function Navbar() {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="quiet-glass fixed top-0 z-50 w-full border-b border-ec-outline-variant/15"
+      className="fixed top-0 z-50 w-full border-b border-ec-outline-variant/15 bg-ec-surface/70 backdrop-blur-md"
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-8 py-4">
         {/* Logo */}
