@@ -427,7 +427,7 @@ export default function PracticePage() {
           result={result}
           onNewPractice={handleNewPractice}
           onGoToDashboard={() => router.push("/dashboard")}
-          onGoToFeedback={() => router.push("/dashboard/feedback")}
+          onGoToFeedback={() => router.push(`/dashboard/feedback/${sessionId}`)}
         />
       )}
     </main>

@@ -146,23 +146,25 @@ export function PracticeResultsStep({
   const seconds = result.duration % 60
 
   return (
-    <div className="animate-fade-in-up flex flex-col gap-10">
-      {/* Headline */}
-      <div className="space-y-2">
-        <p className="text-xs font-medium tracking-widest text-ec-primary uppercase">
-          Resultados · Paso 3 de 3
-        </p>
-        <h1 className="font-headline text-4xl font-bold tracking-tight text-ec-on-surface text-glow">
-          Tu evaluación
-        </h1>
-        <p className="text-sm text-ec-on-surface-variant max-w-sm leading-relaxed">
-          Aquí tienes el análisis detallado de tu desempeño en la simulación.
-        </p>
+    <div className="animate-fade-in-up flex flex-col gap-6">
+      {/* Header & Actions */}
+      <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="space-y-2">
+          <p className="text-xs font-medium tracking-widest text-ec-primary uppercase">
+            Resultados · Paso 3 de 3
+          </p>
+          <h1 className="font-headline text-3xl font-bold tracking-tight text-ec-on-surface text-glow md:text-4xl">
+            Tu evaluación
+          </h1>
+          <p className="max-w-sm text-sm leading-relaxed text-ec-on-surface-variant">
+            Aquí tienes el análisis detallado de tu desempeño en la simulación.
+          </p>
+        </div>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-[auto_1fr]">
+      <div className="grid gap-6 md:grid-cols-[minmax(280px,auto)_1fr]">
         {/* Score panel */}
-        <div className="quiet-surface flex flex-col items-center gap-6 rounded-3xl p-8 md:min-w-[240px]">
+        <div className="quiet-surface flex h-fit md:sticky md:top-6 flex-col items-center gap-6 rounded-3xl p-8">
           <ScoreArc score={result.score} />
 
           <div className="w-full space-y-3 text-center">
@@ -209,6 +211,32 @@ export function PracticeResultsStep({
               </Badge>
             )}
           </div>
+
+          <div className="mt-2 flex w-full flex-col gap-3">
+            <Button
+              onClick={onNewPractice}
+              className="w-full gap-2 rounded-xl text-sm font-semibold shadow-md shadow-ec-primary/20 transition-all hover:-translate-y-0.5"
+            >
+              <RotateCcw className="size-4" />
+              Nueva práctica
+            </Button>
+            {onGoToFeedback && (
+              <Button
+                variant="outline"
+                onClick={onGoToFeedback}
+                className="w-full gap-2 rounded-xl text-sm"
+              >
+                Feedback completo
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={onGoToDashboard}
+              className="w-full gap-2 rounded-xl border-ec-outline-variant/30 text-sm text-ec-on-surface hover:bg-ec-surface-container"
+            >
+              Ver historial
+            </Button>
+          </div>
         </div>
 
         {/* Feedback details */}
@@ -250,38 +278,6 @@ export function PracticeResultsStep({
             </div>
           )}
         </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          size="lg"
-          onClick={onNewPractice}
-          className="gap-2 rounded-xl px-7 text-sm font-semibold shadow-lg shadow-ec-primary/20 hover:-translate-y-0.5 transition-all"
-        >
-          <RotateCcw className="size-4" />
-          Nueva práctica
-        </Button>
-        <Button
-          variant="secondary"
-          size="lg"
-          onClick={onGoToDashboard}
-          className="gap-2 rounded-xl px-7 text-sm"
-        >
-          Ver historial
-          <ArrowRight className="size-4" />
-        </Button>
-        {onGoToFeedback && (
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={onGoToFeedback}
-            className="gap-2 rounded-xl px-7 text-sm"
-          >
-            Ver feedback completo
-            <ArrowRight className="size-4" />
-          </Button>
-        )}
       </div>
     </div>
   )

@@ -4,9 +4,8 @@ import { useEffect, useRef, useState } from "react"
 import { Loader2, Send, SkipForward, Sparkles, Waves } from "lucide-react"
 
 import { Persona } from "@/components/ai-elements/persona"
-import { SpeechInput } from "@/components/ai-elements/speech-input"
+import { SpeechInput, type SpeechInputRef } from "@/components/ai-elements/speech-input"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
@@ -56,7 +55,19 @@ export function PracticeInterviewStep({
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const speechInputRef = useRef<SpeechInputRef>(null)
   const autoFinishTriggered = useRef(false)
+
+  // Auto-activate mic after audio finishes playing
+  const handleAudioEnded = () => {
+    setIsAudioPlaying(false)
+    onQuestionAudioEnd?.()
+    
+    // Auto-start listening if not already complete/processing
+    if (!isInterviewComplete && !isAiTyping && !isTranscribing) {
+      speechInputRef.current?.start()
+    }
+  }
 
   // Auto-finish once the interview is complete
   useEffect(() => {
@@ -93,8 +104,12 @@ export function PracticeInterviewStep({
     }
 
     el.src = audioUrl
-    el.play().catch(() => { /* autoplay blocked — interview continues without audio */ })
+    el.play().catch(() => {
+      // autoplay blocked — interview continues without audio, maybe auto-start mic immediately
+      handleAudioEnded()
+    })
   }, [audioUrl])
+
   const isQuestionReady = currentQuestion.trim().length > 0
   const effectivePreparing = isPreparing || (!isInterviewComplete && !isQuestionReady)
   const canSend =
@@ -110,13 +125,6 @@ export function PracticeInterviewStep({
     if (!canSend) return
     onSendAnswer(answer.trim())
     setAnswer("")
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault()
-      handleSend()
-    }
   }
 
   const progress = totalQuestions > 0 ? ((questionIndex) / totalQuestions) * 100 : 0
@@ -164,8 +172,8 @@ export function PracticeInterviewStep({
         ref={audioRef}
         hidden
         onPlay={() => setIsAudioPlaying(true)}
-        onEnded={() => { setIsAudioPlaying(false); onQuestionAudioEnd?.() }}
-        onError={() => { setIsAudioPlaying(false); onQuestionAudioEnd?.() }}
+        onEnded={handleAudioEnded}
+        onError={handleAudioEnded}
       />
       <header className="mb-2 flex shrink-0 items-center justify-between gap-6 border-b border-ec-outline-variant/10 pb-4 pt-4">
         <div className="flex min-w-0 items-center gap-3">
@@ -218,32 +226,9 @@ export function PracticeInterviewStep({
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col justify-between gap-6 overflow-y-auto pb-4 pt-6">
-        <section className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
-          <div className="flex flex-col items-center gap-4">
-            <Badge className="rounded-full bg-ec-primary-container px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-ec-on-primary-container">
-              {effectivePreparing ? "Preparando" : isInterviewComplete ? "Resumen" : `Pregunta ${questionIndex}`}
-            </Badge>
-
-            <div className="quiet-surface w-full max-w-6xl rounded-[2rem] px-6 py-8 md:px-10 md:py-10 xl:max-w-7xl xl:px-12">
-              {!effectivePreparing && isPersonaReady ? (
-                <p className="font-headline text-xl font-bold leading-tight text-ec-on-surface text-glow md:text-[2rem] md:leading-[1.15] xl:text-[2rem]">
-                  {promptText}
-                </p>
-              ) : (
-                <div className="flex flex-col items-center gap-3 py-4 text-center">
-                  <Loader2 className="size-5 animate-spin text-ec-primary" />
-                  <p className="font-headline text-xl font-bold leading-tight text-ec-on-surface md:text-3xl">
-                    Preparando entrevista
-                  </p>
-                  <p className="max-w-xl text-sm leading-relaxed text-ec-on-surface-variant">
-                    En unos segundos verás al entrevistador y podrás responder con voz o texto.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
+      <div className="flex flex-1 flex-col overflow-y-auto pb-6 pt-6 md:flex-row md:items-center md:justify-center md:gap-12 lg:gap-16">
+        {/* Columna Izquierda: Persona y Controles de Voz */}
+        <section className="flex shrink-0 flex-col items-center justify-center gap-8 pb-8 md:w-[320px] md:pb-0">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="absolute inset-4 rounded-full bg-ec-primary/10 blur-2xl" aria-hidden="true" />
@@ -251,23 +236,24 @@ export function PracticeInterviewStep({
                 state={personaState}
                 variant="mana"
                 className={cn(
-                    "size-36 transition-opacity duration-500 md:size-44",
+                  "size-40 transition-opacity duration-500 md:size-56",
                   isPersonaReady ? "opacity-100" : "opacity-0",
                 )}
                 onReady={() => setIsPersonaReady(true)}
               />
               {!isPersonaReady && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="size-24 rounded-full border border-ec-outline-variant/20 bg-ec-surface-container-low animate-pulse md:size-28" />
+                  <div className="size-28 md:size-36 rounded-full border border-ec-outline-variant/20 bg-ec-surface-container-low animate-pulse" />
                 </div>
               )}
             </div>
 
             <div className="flex flex-col items-center gap-3">
               <SpeechInput
+                ref={speechInputRef}
                 type="button"
                 size="icon"
-                disabled={effectivePreparing || isAiTyping || isTranscribing || isInterviewComplete || isFinishing || !isPersonaReady}
+                disabled={effectivePreparing || isAiTyping || isTranscribing || isInterviewComplete || isFinishing || !isPersonaReady || isAudioPlaying}
                 onListeningChange={setIsListening}
                 onAudioRecorded={onTranscribeAudio}
                 preferredMode="server-transcription"
@@ -278,87 +264,111 @@ export function PracticeInterviewStep({
                     return prev.trim().length > 0 ? `${prev.trim()} ${normalized}` : normalized
                   })
                 }}
-                className="size-16 shadow-lg shadow-ec-primary/20"
-                aria-label="Activar dictado de respuesta"
+                className="size-16 shadow-lg shadow-ec-primary/20 hover:scale-105"
+                aria-label="Activar micrófono para responder"
               />
-              <div className="flex items-center gap-2 text-xs text-ec-on-surface-variant">
-                <Waves className="size-3.5" />
+              <div className="flex items-center gap-2 text-xs font-medium text-ec-on-surface-variant">
+                <Waves className={cn("size-3.5", isListening && "text-ec-primary animate-pulse")} />
                 <span>{isPersonaReady ? statusLabel : "Preparando entrevista"}</span>
               </div>
             </div>
           </div>
         </section>
 
-        <div
-          className={cn(
-            "shrink-0 space-y-3 transition-all duration-500",
-            isResponseAreaReady
-              ? "translate-y-0 opacity-100"
-              : "pointer-events-none translate-y-4 opacity-0",
-          )}
-        >
-          {isResponseAreaReady && !isAiTyping && !isInterviewComplete && (
-            <p className="text-center text-xs text-ec-on-surface-variant animate-fade-in">
-              Puedes responder con voz o ajustar el texto manualmente. Usa Ctrl+Enter para continuar.
-            </p>
-          )}
+        {/* Columna Derecha: Pregunta y Transcripción */}
+        <section className="flex w-full max-w-2xl flex-1 flex-col justify-center gap-6">
+          <div className="flex flex-col items-start gap-4">
+            <Badge className="rounded-full bg-ec-primary-container px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-ec-on-primary-container">
+              {effectivePreparing ? "Preparando" : isInterviewComplete ? "Resumen" : `Pregunta ${questionIndex} de ${totalQuestions}`}
+            </Badge>
 
-          <div className="quiet-surface mx-auto flex w-full max-w-6xl flex-col gap-4 rounded-[2rem] p-4 md:p-5 xl:max-w-7xl">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-ec-on-surface-variant">
-              <Sparkles className="size-3.5" />
-              Tu respuesta
-            </div>
-
-            <Textarea
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={
-                effectivePreparing
-                  ? "Estamos preparando la entrevista..."
-                  : isInterviewComplete
-                  ? "La entrevista terminó. Generando tu feedback..."
-                  : "Tu respuesta aparecerá aquí mientras hablas o escribes."
-              }
-              disabled={effectivePreparing || isAiTyping || isTranscribing || isInterviewComplete || isFinishing}
-              rows={3}
-              className={cn(
-                "min-h-22 resize-none rounded-2xl border-transparent bg-ec-surface-container-lowest px-4 py-3 text-sm shadow-none md:min-h-12",
-                "focus-visible:border-ec-primary/35 focus-visible:ring-0",
-                "placeholder:text-ec-on-surface-variant/45 transition-all",
-              )}
-            />
-
-            <div className="flex flex-wrap items-center justify-end gap-3">
-              {isInterviewComplete ? (
-                <Button
-                  size="lg"
-                  onClick={() => onFinish(elapsedSeconds)}
-                  disabled={isFinishing}
-                  className="gap-2 rounded-xl px-6 text-sm font-semibold"
-                >
-                  {isFinishing ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <SkipForward className="size-4" />
-                  )}
-                  {isFinishing ? "Generando feedback…" : "Ver resultados"}
-                </Button>
+            <div className="quiet-surface w-full rounded-[2rem] px-6 py-8 md:px-8 shadow-sm">
+              {!effectivePreparing && isPersonaReady ? (
+                <p className="font-headline text-2xl font-bold leading-tight text-ec-on-surface text-glow md:text-[2rem] md:leading-[1.2]">
+                  {promptText}
+                </p>
               ) : (
-                <Button
-                  size="lg"
-                  disabled={!canSend}
-                  onClick={handleSend}
-                  className="gap-2 rounded-xl px-6 text-sm font-semibold shadow-none"
-                  aria-label="Enviar respuesta"
-                >
-                  <Send className="size-4" />
-                  Continuar
-                </Button>
+                <div className="flex flex-col items-start gap-3 py-2 text-left">
+                  <Loader2 className="size-5 animate-spin text-ec-primary" />
+                  <p className="font-headline text-xl font-bold leading-tight text-ec-on-surface md:text-3xl">
+                    Conectando con tu entrevistador...
+                  </p>
+                  <p className="max-w-xl text-sm leading-relaxed text-ec-on-surface-variant">
+                    En unos segundos podrás conversar. Recuerda que esta simulación es puramente por voz.
+                  </p>
+                </div>
               )}
             </div>
           </div>
-        </div>
+
+          <div
+            className={cn(
+              "flex flex-col gap-4 transition-all duration-500",
+              isResponseAreaReady ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0",
+            )}
+          >
+            <div className="quiet-surface flex w-full flex-col gap-3 rounded-[2rem] p-5 shadow-sm">
+              <div className="flex items-center gap-2 px-2 text-xs font-semibold uppercase tracking-[0.18em] text-ec-on-surface-variant">
+                <Sparkles className="size-3.5" />
+                Tu respuesta (Transmisión de voz)
+              </div>
+
+              <div
+                className={cn(
+                  "min-h-[140px] w-full resize-none overflow-y-auto rounded-2xl bg-ec-surface-container-lowest px-5 py-4 text-sm leading-relaxed shadow-inner",
+                  "border border-ec-outline-variant/5 transition-all text-ec-on-surface",
+                )}
+              >
+                {effectivePreparing ? (
+                  <span className="text-ec-on-surface-variant/50">Esperando inicio...</span>
+                ) : isInterviewComplete ? (
+                  <span className="text-ec-on-surface-variant/50">La entrevista ha finalizado. Generando el análisis detallado.</span>
+                ) : answer ? (
+                  <span className="whitespace-pre-wrap">{answer}</span>
+                ) : (
+                  <span className="text-ec-on-surface-variant/50 italic">
+                    {isListening 
+                      ? "Escuchando... tu voz será transcrita aquí automáticamente."
+                      : "Presiona el micrófono y empieza a hablar para responder..."}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <p className="px-2 text-xs text-ec-on-surface-variant/70">
+                  {!isInterviewComplete && !isListening && answer.length > 0 && "Envía tu respuesta cuando termines de hablar."}
+                </p>
+
+                {isInterviewComplete ? (
+                  <Button
+                    size="lg"
+                    onClick={() => onFinish(elapsedSeconds)}
+                    disabled={isFinishing}
+                    className="gap-2 rounded-xl px-6 text-sm font-semibold shadow-md"
+                  >
+                    {isFinishing ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <SkipForward className="size-4" />
+                    )}
+                    {isFinishing ? "Generando feedback…" : "Ver resultados"}
+                  </Button>
+                ) : (
+                  <Button
+                    size="lg"
+                    disabled={!canSend}
+                    onClick={handleSend}
+                    className="gap-2 rounded-xl px-6 text-sm font-semibold shadow-md transition-transform hover:-translate-y-0.5"
+                    aria-label="Enviar respuesta oral"
+                  >
+                    <Send className="size-4" />
+                    Enviar y continuar
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   )

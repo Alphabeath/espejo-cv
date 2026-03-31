@@ -5,7 +5,13 @@ import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { MicIcon, SquareIcon } from "lucide-react";
 import type { ComponentProps } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
+
+export interface SpeechInputRef {
+  start: () => void;
+  stop: () => void;
+  toggle: () => void;
+}
 
 interface SpeechRecognition extends EventTarget {
   continuous: boolean;
@@ -102,7 +108,7 @@ const detectSpeechInputMode = (
   return "none";
 };
 
-export const SpeechInput = ({
+export const SpeechInput = forwardRef<SpeechInputRef, SpeechInputProps>(({
   className,
   onTranscriptionChange,
   onListeningChange,
@@ -111,7 +117,7 @@ export const SpeechInput = ({
   preferredMode = "auto",
   lang = "en-US",
   ...props
-}: SpeechInputProps) => {
+}, ref) => {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [mode] = useState<SpeechInputMode>(() =>
@@ -315,6 +321,16 @@ export const SpeechInput = ({
     }
   }, [mode, isListening, startMediaRecorder, stopMediaRecorder]);
 
+  useImperativeHandle(ref, () => ({
+    start: () => {
+      if (!isListening) toggleListening();
+    },
+    stop: () => {
+      if (isListening) toggleListening();
+    },
+    toggle: toggleListening
+  }), [isListening, toggleListening]);
+
   // Determine if button should be disabled
   const isDisabled =
     mode === "none" ||
@@ -356,4 +372,5 @@ export const SpeechInput = ({
       </Button>
     </div>
   );
-};
+});
+SpeechInput.displayName = "SpeechInput";
