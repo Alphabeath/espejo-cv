@@ -10,6 +10,13 @@ Espejo CV es una plataforma de práctica de entrevistas impulsada por Inteligenc
 - **Panel de Retroalimentación (*Dashboard*):** Revisa el historial de tus prácticas y recibe insights detallados sobre tu desempeño y áreas de mejora.
 - **Autenticación y Backend Seguro:** Gestión de datos y usuarios soportada bajo la infraestructura y bases de datos de Appwrite.
 
+## 📷 Capturas
+<img width="1853" height="900" alt="Captura de pantalla 2026-03-31 140933" src="https://github.com/user-attachments/assets/52892d4f-aca2-4944-956a-20241b7adb32" />
+<img width="1870" height="977" alt="Captura de pantalla 2026-03-31 140134" src="https://github.com/user-attachments/assets/b2e79eb6-92ed-4714-bb0e-8d7473db0bae" />
+<img width="1860" height="972" alt="Captura de pantalla 2026-03-31 140032" src="https://github.com/user-attachments/assets/694fd777-a3ee-4873-8b36-a6e978a1c2b3" />
+<img width="1848" height="959" alt="Captura de pantalla 2026-03-31 113444" src="https://github.com/user-attachments/assets/812d9378-3f4f-42ef-8b71-c1701cb31f40" />
+
+
 ## 🛠️ Stack tecnológico
 
 El proyecto está construido con un enfoque moderno y altamente optimizado:
